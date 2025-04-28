@@ -1,0 +1,114 @@
+#![allow(dead_code)]
+
+use tokens::{Token, TokenType};
+
+mod span;
+mod tokens;
+
+struct Lexer {
+    content: String,
+    position: usize,
+}
+
+impl Lexer {
+    fn new(program: String) -> Self {
+        Lexer {
+            content: program,
+            position: 0,
+        }
+    }
+
+    fn peek(&self, distance: usize) -> Option<char> {
+        self.content.chars().nth(self.position + distance)
+    }
+
+    fn next(&mut self) -> Option<char> {
+        let char = self.peek(0);
+        self.position += 1;
+        char
+    }
+
+    fn advance(&mut self, distance: usize) {
+        self.position += distance;
+    }
+
+    fn make_single_char_token(&mut self, kind: TokenType) -> Token {
+        let tok = Token::new(kind, self.position, 1);
+        self.advance(1);
+        tok
+    }
+
+    fn make_double_char_token(&mut self, kind: TokenType) -> Token {
+        let tok = Token::new(kind, self.position, 2);
+        self.advance(2);
+        tok
+    }
+
+    pub fn next_token(&mut self) -> Token {
+        use tokens::TokenType::*;
+
+        let Some(cur_char) = self.peek(0) else {
+            return Token::new(Eof, self.position, 1);
+        };
+
+        match cur_char {
+            // single-char tokens
+            '+' => self.make_single_char_token(Plus),
+            '-' => match self.peek(1) {
+                Some('-') => todo!("comments"),
+                Some('>') => self.make_double_char_token(RArrow),
+                _ => self.make_single_char_token(Minus),
+            },
+            '/' => self.make_single_char_token(Divide),
+            '*' => self.make_single_char_token(Multiply),
+            '^' => self.make_single_char_token(Exponent),
+            '=' => self.make_single_char_token(Equal),
+            '<' => match self.peek(1) {
+                Some('-') => self.make_double_char_token(LArrow),
+                Some('=') => self.make_double_char_token(LessThanOrEqual),
+                _ => self.make_single_char_token(LessThan),
+            },
+            '>' => match self.peek(1) {
+                Some('=') => self.make_double_char_token(GreaterThanOrEqual),
+                _ => self.make_single_char_token(GreaterThanOrEqual),
+            },
+            '(' => self.make_single_char_token(LParen),
+            ')' => self.make_single_char_token(RParen),
+            '{' => self.make_single_char_token(LBrace),
+            '}' => self.make_single_char_token(RBrace),
+            ':' => self.make_single_char_token(Colon),
+            ',' => self.make_single_char_token(Comma),
+            '\n' => self.make_single_char_token(Newline),
+            _ => todo!(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokens::{TokenType, TokenType::*};
+
+    fn expect_tok(lexer: &mut Lexer, expected: TokenType) {
+        let token = lexer.next_token();
+        assert_eq!(token.kind, expected);
+    }
+
+    #[test]
+    fn variable_decl() {
+        let input = "val x <- 3\nmut bar <- 40";
+        let mut lexer = Lexer::new(input.to_string());
+        expect_tok(&mut lexer, Val);
+        expect_tok(&mut lexer, Identifier("x".to_string()));
+        expect_tok(&mut lexer, LArrow);
+        expect_tok(&mut lexer, IntLiteral(3));
+        expect_tok(&mut lexer, Newline);
+        expect_tok(&mut lexer, Mut);
+        expect_tok(&mut lexer, Identifier("bar".to_string()));
+        expect_tok(&mut lexer, LArrow);
+        expect_tok(&mut lexer, IntLiteral(40));
+        expect_tok(&mut lexer, Eof);
+        expect_tok(&mut lexer, Eof);
+        expect_tok(&mut lexer, Eof);
+    }
+}

@@ -1,3 +1,55 @@
 # The Lonely Programming Language
 
 A purpose-built programming language for developing humbleOS
+
+## Core philosophies
+1. if readability isn't lessened, less syntax is better
+
+## Features (from discord)
+- inline assembly
+- no tabs
+- strong type system
+- compiled
+- fast compilation
+- good enums w/ associated values
+- first-class functions
+- open source ✅
+- a video series ✅
+- interfaces/traits/protocols
+- pattern matching
+- algebraic data types
+- anonymous sum and product types
+- immutability by default
+- compile time evaluation
+- typed errors
+- stack trace stuff
+
+## To be debated:
+- C-style squirrelies
+
+## Syntax
+
+```
+-- variable declaration
+val foo <- 4
+mut bar: Int <- 4
+
+-- functions
+fun calc(x, y: Int) -> Int {
+  val z <- x / y
+  z ^ 2
+}
+
+calc(x: foo, y: bar)
+
+fun say_hi(to person: String) {
+  print("hi \(person)")
+}
+
+say_hi(to: "Stefan")
+```
+
+## Language:
+
+- rust
+- ocaml
