@@ -1,78 +1,25 @@
 #![allow(dead_code)]
 
-use tokens::{Token, TokenType};
+use tokens::{Token, TokenKind};
 
 mod span;
-mod tokens;
+pub mod tokens;
 
-struct Lexer {
+pub struct Lexer {
     content: String,
     position: usize,
 }
 
 impl Lexer {
-    fn new(program: String) -> Self {
+    pub fn new(program: &str) -> Self {
         Lexer {
-            content: program,
+            content: program.to_string(),
             position: 0,
         }
     }
 
-    fn peek(&self, distance: usize) -> Option<char> {
-        self.content.chars().nth(self.position + distance)
-    }
-
-    fn next(&mut self) -> Option<char> {
-        let char = self.peek(0);
-        self.position += 1;
-        char
-    }
-
-    fn advance(&mut self, distance: usize) {
-        self.position += distance;
-    }
-
-    fn make_single_char_token(&mut self, kind: TokenType) -> Token {
-        let tok = Token::new(kind, self.position, 1);
-        self.advance(1);
-        tok
-    }
-
-    fn make_double_char_token(&mut self, kind: TokenType) -> Token {
-        let tok = Token::new(kind, self.position, 2);
-        self.advance(2);
-        tok
-    }
-
-    fn read_ident(&mut self) -> String {
-        let initial_position = self.position;
-        self.advance(1);
-        while matches!(self.peek(0), Some('a'..='z' | 'A'..='Z' | '_' | '0'..='9')) {
-            self.advance(1);
-        }
-        self.content[initial_position..self.position].to_string()
-    }
-
-    fn read_int(&mut self) -> usize {
-        let initial_position = self.position;
-        self.advance(1);
-        while matches!(self.peek(0), Some('0'..='9')) {
-            self.advance(1);
-        }
-        self.content[initial_position..self.position]
-            .to_string()
-            .parse::<usize>()
-            .unwrap()
-    }
-
-    fn skip_whitespace(&mut self) {
-        while matches!(self.peek(0), Some(' ' | '\r' | '\t')) {
-            self.advance(1);
-        }
-    }
-
     pub fn next_token(&mut self) -> Token {
-        use tokens::TokenType::*;
+        use tokens::TokenKind::*;
 
         self.skip_whitespace();
 
@@ -117,6 +64,7 @@ impl Lexer {
             ')' => self.make_single_char_token(RParen),
             '{' => self.make_single_char_token(LBrace),
             '}' => self.make_single_char_token(RBrace),
+            '~' => self.make_single_char_token(Tilde),
             ':' => self.make_single_char_token(Colon),
             ',' => self.make_single_char_token(Comma),
             '\n' => self.make_single_char_token(Newline),
@@ -142,14 +90,80 @@ impl Lexer {
             c => panic!("illegal token: {c}"),
         }
     }
+
+    fn peek(&self, distance: usize) -> Option<char> {
+        self.content.chars().nth(self.position + distance)
+    }
+
+    fn next(&mut self) -> Option<char> {
+        let char = self.peek(0);
+        self.position += 1;
+        char
+    }
+
+    fn advance(&mut self, distance: usize) {
+        self.position += distance;
+    }
+
+    fn make_single_char_token(&mut self, kind: TokenKind) -> Token {
+        let tok = Token::new(kind, self.position, 1);
+        self.advance(1);
+        tok
+    }
+
+    fn make_double_char_token(&mut self, kind: TokenKind) -> Token {
+        let tok = Token::new(kind, self.position, 2);
+        self.advance(2);
+        tok
+    }
+
+    fn read_ident(&mut self) -> String {
+        let initial_position = self.position;
+        self.advance(1);
+        while matches!(self.peek(0), Some('a'..='z' | 'A'..='Z' | '_' | '0'..='9')) {
+            self.advance(1);
+        }
+        self.content[initial_position..self.position].to_string()
+    }
+
+    fn read_int(&mut self) -> usize {
+        let initial_position = self.position;
+        self.advance(1);
+        while matches!(self.peek(0), Some('0'..='9')) {
+            self.advance(1);
+        }
+        self.content[initial_position..self.position]
+            .to_string()
+            .parse::<usize>()
+            .unwrap()
+    }
+
+    fn skip_whitespace(&mut self) {
+        while matches!(self.peek(0), Some(' ' | '\r' | '\t')) {
+            self.advance(1);
+        }
+    }
+}
+
+impl Iterator for Lexer {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let tok = self.next_token();
+        if tok.kind == TokenKind::Eof {
+            None
+        } else {
+            Some(tok)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokens::{TokenType, TokenType::*};
+    use tokens::{TokenKind, TokenKind::*};
 
-    fn expect_tok(lexer: &mut Lexer, expected: TokenType) {
+    fn expect_tok(lexer: &mut Lexer, expected: TokenKind) {
         let token = lexer.next_token();
         assert_eq!(token.kind, expected);
     }
@@ -157,12 +171,13 @@ mod tests {
     #[test]
     fn all_syntax() {
         let input =
-            "val mut fun<- lorem_ipsum123    ->(){ }:,\n -- lorem lorem \n!+   - /*^= != < > <= >=\n-- comment";
-        let mut lexer = Lexer::new(input.to_string());
+            "val mut fun<- ~lorem_ipsum123    ->(){ }:,\n -- lorem lorem \n!+   - /*^= != < > <= >=\n-- comment";
+        let mut lexer = Lexer::new(input);
         expect_tok(&mut lexer, Val);
         expect_tok(&mut lexer, Mut);
         expect_tok(&mut lexer, Fun);
         expect_tok(&mut lexer, LArrow);
+        expect_tok(&mut lexer, Tilde);
         expect_tok(&mut lexer, Identifier("lorem_ipsum123".to_string()));
         expect_tok(&mut lexer, RArrow);
         expect_tok(&mut lexer, LParen);

@@ -1,7 +1,7 @@
 use crate::span::Span;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TokenType {
+pub enum TokenKind {
     // keywords:
     Val, // val
     Mut, // mut
@@ -16,6 +16,7 @@ pub enum TokenType {
     RBrace,  // }
     Colon,   // :
     Comma,   // ,
+    Tilde,   // ~
     Newline, // \n
 
     // operators:
@@ -40,13 +41,14 @@ pub enum TokenType {
     Eof,
 }
 
+#[derive(Clone)]
 pub struct Token {
-    pub kind: TokenType,
+    pub kind: TokenKind,
     pub position: Span,
 }
 
 impl Token {
-    pub fn new(kind: TokenType, start: usize, size: usize) -> Self {
+    pub fn new(kind: TokenKind, start: usize, size: usize) -> Self {
         Token {
             kind,
             position: Span {
