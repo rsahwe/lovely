@@ -1,4 +1,4 @@
-# The Lonely Programming Language
+# The Lovely Programming Language
 
 A purpose-built programming language for developing humbleOS
 

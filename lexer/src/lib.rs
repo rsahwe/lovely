@@ -47,8 +47,8 @@ impl Lexer {
                 Some('>') => self.make_double_char_token(RArrow),
                 _ => self.make_single_char_token(Minus),
             },
-            '/' => self.make_single_char_token(Divide),
-            '*' => self.make_single_char_token(Multiply),
+            '/' => self.make_single_char_token(Slash),
+            '*' => self.make_single_char_token(Asterisk),
             '^' => self.make_single_char_token(Exponent),
             '=' => self.make_single_char_token(Equal),
             '<' => match self.peek(1) {
@@ -126,7 +126,7 @@ impl Lexer {
         self.content[initial_position..self.position].to_string()
     }
 
-    fn read_int(&mut self) -> usize {
+    fn read_int(&mut self) -> isize {
         let initial_position = self.position;
         self.advance(1);
         while matches!(self.peek(0), Some('0'..='9')) {
@@ -134,7 +134,7 @@ impl Lexer {
         }
         self.content[initial_position..self.position]
             .to_string()
-            .parse::<usize>()
+            .parse::<isize>()
             .unwrap()
     }
 
@@ -191,8 +191,8 @@ mod tests {
         expect_tok(&mut lexer, Not);
         expect_tok(&mut lexer, Plus);
         expect_tok(&mut lexer, Minus);
-        expect_tok(&mut lexer, Divide);
-        expect_tok(&mut lexer, Multiply);
+        expect_tok(&mut lexer, Slash);
+        expect_tok(&mut lexer, Asterisk);
         expect_tok(&mut lexer, Exponent);
         expect_tok(&mut lexer, Equal);
         expect_tok(&mut lexer, NotEqual);

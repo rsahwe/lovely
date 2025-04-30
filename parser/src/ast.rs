@@ -11,23 +11,22 @@ pub enum Statement {
 #[derive(PartialEq, Eq, Debug)]
 pub enum Expression {
     IntLiteral(isize),
-    Prefix(PrefixExpression),
-    Infix(InfixExpression),
     Ident(String),
-    FunctionCall(FunctionCall),
-}
 
-#[derive(PartialEq, Eq, Debug)]
-pub struct InfixExpression {
-    pub operator: InfixOperator,
-    pub lh_expression: Box<Expression>,
-    pub rh_expression: Box<Expression>,
-}
+    Prefix {
+        operator: PrefixOperator,
+        expression: Box<Expression>,
+    },
+    Infix {
+        left: Box<Expression>,
+        operator: InfixOperator,
+        right: Box<Expression>,
+    },
 
-#[derive(PartialEq, Eq, Debug)]
-pub struct PrefixExpression {
-    pub operator: PrefixOperator,
-    pub expression: Box<Expression>,
+    FunctionCall {
+        name: String,
+        arguments: Vec<Argument>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -50,12 +49,6 @@ pub enum InfixOperator {
     GreaterThan,
     LessThanOrEqual,
     GreaterThanOrEqual,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct FunctionCall {
-    pub name: String,
-    pub arguments: Vec<Argument>,
 }
 
 #[derive(PartialEq, Eq, Debug)]
