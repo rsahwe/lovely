@@ -48,8 +48,6 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.cur_token() {
-            Val => todo!(),
-            Mut => todo!(),
             Fun => todo!(),
             _ => self.parse_expression_statement(),
         }

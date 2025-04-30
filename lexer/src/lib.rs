@@ -28,31 +28,30 @@ impl Lexer {
         };
 
         match cur_char {
+            '#' => {
+                self.advance(1);
+                while let Some(c) = self.peek(0) {
+                    if c == '\n' {
+                        break;
+                    }
+                    self.advance(1);
+                }
+                self.next_token()
+            }
             '!' => match self.peek(1) {
                 Some('=') => self.make_double_char_token(NotEqual),
                 _ => self.make_single_char_token(Not),
             },
             '+' => self.make_single_char_token(Plus),
-            '-' => match self.peek(1) {
-                Some('-') => {
-                    self.advance(2);
-                    while let Some(c) = self.peek(0) {
-                        if c == '\n' {
-                            break;
-                        }
-                        self.advance(1);
-                    }
-                    self.next_token()
-                }
-                Some('>') => self.make_double_char_token(RArrow),
-                _ => self.make_single_char_token(Minus),
-            },
+            '-' => self.make_single_char_token(Minus),
             '/' => self.make_single_char_token(Slash),
             '*' => self.make_single_char_token(Asterisk),
             '^' => self.make_single_char_token(Exponent),
-            '=' => self.make_single_char_token(Equal),
+            '=' => match self.peek(1) {
+                Some('=') => self.make_double_char_token(DoubleEqual),
+                _ => self.make_single_char_token(Equal),
+            },
             '<' => match self.peek(1) {
-                Some('-') => self.make_double_char_token(LArrow),
                 Some('=') => self.make_double_char_token(LessThanOrEqual),
                 _ => self.make_single_char_token(LessThan),
             },
@@ -72,8 +71,6 @@ impl Lexer {
                 let initial_position = self.position;
                 let ident = self.read_ident();
                 match ident.as_str() {
-                    "val" => Token::new(Val, initial_position, 3),
-                    "mut" => Token::new(Mut, initial_position, 3),
                     "fun" => Token::new(Fun, initial_position, 3),
                     s => Token::new(Identifier(s.to_string()), initial_position, s.len()),
                 }
@@ -161,48 +158,87 @@ impl Iterator for Lexer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use tokens::{TokenKind, TokenKind::*};
 
-    fn expect_tok(lexer: &mut Lexer, expected: TokenKind) {
-        let token = lexer.next_token();
-        assert_eq!(token.kind, expected);
+    fn expect_tok(lexer: &mut Lexer, expected: Vec<TokenKind>) {
+        let token_kinds = lexer
+            .into_iter()
+            .map(|t| t.kind.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(token_kinds, expected);
     }
 
     #[test]
     fn all_syntax() {
-        let input =
-            "val mut fun<- ~lorem_ipsum123    ->(){ }:,\n -- lorem lorem \n!+   - /*^= != < > <= >=\n-- comment";
+        let input = r#"
+# variable declaration
+foo :: 4
+bar : Int = 33
+
+# functions
+calc :: fun (~x, ~y: Int) Int {
+  z :: x / y
+  z^2
+}
+
+calc(foo, bar)"#
+            .trim();
         let mut lexer = Lexer::new(input);
-        expect_tok(&mut lexer, Val);
-        expect_tok(&mut lexer, Mut);
-        expect_tok(&mut lexer, Fun);
-        expect_tok(&mut lexer, LArrow);
-        expect_tok(&mut lexer, Tilde);
-        expect_tok(&mut lexer, Identifier("lorem_ipsum123".to_string()));
-        expect_tok(&mut lexer, RArrow);
-        expect_tok(&mut lexer, LParen);
-        expect_tok(&mut lexer, RParen);
-        expect_tok(&mut lexer, LBrace);
-        expect_tok(&mut lexer, RBrace);
-        expect_tok(&mut lexer, Colon);
-        expect_tok(&mut lexer, Comma);
-        expect_tok(&mut lexer, Newline);
-        expect_tok(&mut lexer, Newline);
-        expect_tok(&mut lexer, Not);
-        expect_tok(&mut lexer, Plus);
-        expect_tok(&mut lexer, Minus);
-        expect_tok(&mut lexer, Slash);
-        expect_tok(&mut lexer, Asterisk);
-        expect_tok(&mut lexer, Exponent);
-        expect_tok(&mut lexer, Equal);
-        expect_tok(&mut lexer, NotEqual);
-        expect_tok(&mut lexer, LessThan);
-        expect_tok(&mut lexer, GreaterThan);
-        expect_tok(&mut lexer, LessThanOrEqual);
-        expect_tok(&mut lexer, GreaterThanOrEqual);
-        expect_tok(&mut lexer, Newline);
-        expect_tok(&mut lexer, Eof);
-        expect_tok(&mut lexer, Eof);
-        expect_tok(&mut lexer, Eof);
+        expect_tok(
+            &mut lexer,
+            vec![
+                Newline,
+                Identifier("foo".to_string()),
+                Colon,
+                Colon,
+                IntLiteral(4),
+                Newline,
+                Identifier("bar".to_string()),
+                Colon,
+                Identifier("Int".to_string()),
+                Equal,
+                IntLiteral(33),
+                Newline,
+                Newline,
+                Newline,
+                Identifier("calc".to_string()),
+                Colon,
+                Colon,
+                Fun,
+                LParen,
+                Tilde,
+                Identifier("x".to_string()),
+                Comma,
+                Tilde,
+                Identifier("y".to_string()),
+                Colon,
+                Identifier("Int".to_string()),
+                RParen,
+                Identifier("Int".to_string()),
+                LBrace,
+                Newline,
+                Identifier("z".to_string()),
+                Colon,
+                Colon,
+                Identifier("x".to_string()),
+                Slash,
+                Identifier("y".to_string()),
+                Newline,
+                Identifier("z".to_string()),
+                Exponent,
+                IntLiteral(2),
+                Newline,
+                RBrace,
+                Newline,
+                Newline,
+                Identifier("calc".to_string()),
+                LParen,
+                Identifier("foo".to_string()),
+                Comma,
+                Identifier("bar".to_string()),
+                RParen,
+            ],
+        );
     }
 }

@@ -1,0 +1,17 @@
+# variable declaration
+foo :: 4
+bar : Int = 4
+
+# functions
+calc :: fun (~x, ~y: Int) Int {
+  z :: x / y
+  z^2
+}
+
+calc(foo, bar)
+
+say_hi :: fun (to person: String) {
+  print("hi \(person)")
+}
+
+say_hi(to: "Stefan")

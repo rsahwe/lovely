@@ -5,13 +5,9 @@ use crate::span::Span;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     // keywords:
-    Val, // val
-    Mut, // mut
     Fun, // fun
 
     // syntax
-    LArrow,  // <-
-    RArrow,  // ->
     LParen,  // (
     RParen,  // )
     LBrace,  // {
@@ -20,6 +16,7 @@ pub enum TokenKind {
     Comma,   // ,
     Tilde,   // ~
     Newline, // \n
+    Equal,   // =
 
     // operators:
     Not,                // !
@@ -28,7 +25,7 @@ pub enum TokenKind {
     Slash,              // /
     Asterisk,           // *
     Exponent,           // ^
-    Equal,              // =
+    DoubleEqual,        // ==
     NotEqual,           // !=
     LessThan,           // <
     GreaterThan,        // >
@@ -46,11 +43,7 @@ pub enum TokenKind {
 impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            TokenKind::Val => "val",
-            TokenKind::Mut => "mut",
             TokenKind::Fun => "fun",
-            TokenKind::LArrow => "<-",
-            TokenKind::RArrow => "->",
             TokenKind::LParen => "(",
             TokenKind::RParen => ")",
             TokenKind::LBrace => "{",
@@ -59,13 +52,14 @@ impl Display for TokenKind {
             TokenKind::Comma => ",",
             TokenKind::Tilde => "~",
             TokenKind::Newline => "\\n",
+            TokenKind::Equal => "=",
             TokenKind::Not => "!",
             TokenKind::Plus => "+",
             TokenKind::Minus => "-",
             TokenKind::Slash => "/",
             TokenKind::Asterisk => "*",
             TokenKind::Exponent => "^",
-            TokenKind::Equal => "=",
+            TokenKind::DoubleEqual => "=",
             TokenKind::NotEqual => "!=",
             TokenKind::LessThan => "<",
             TokenKind::GreaterThan => ">",
