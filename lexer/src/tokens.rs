@@ -8,15 +8,15 @@ pub enum TokenKind {
     Fun, // fun
 
     // syntax
-    LParen,  // (
-    RParen,  // )
-    LBrace,  // {
-    RBrace,  // }
-    Colon,   // :
-    Comma,   // ,
-    Tilde,   // ~
-    Newline, // \n
-    Equal,   // =
+    LParen,    // (
+    RParen,    // )
+    LBrace,    // {
+    RBrace,    // }
+    Colon,     // :
+    Comma,     // ,
+    Tilde,     // ~
+    Semicolon, // ;
+    Equal,     // =
 
     // operators:
     Not,                // !
@@ -51,7 +51,7 @@ impl Display for TokenKind {
             TokenKind::Colon => ":",
             TokenKind::Comma => ",",
             TokenKind::Tilde => "~",
-            TokenKind::Newline => "\\n",
+            TokenKind::Semicolon => ";",
             TokenKind::Equal => "=",
             TokenKind::Not => "!",
             TokenKind::Plus => "+",

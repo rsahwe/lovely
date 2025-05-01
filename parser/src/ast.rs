@@ -1,11 +1,10 @@
 #[derive(PartialEq, Eq, Debug)]
-pub struct Program(pub Vec<Statement>);
+pub struct Program(pub Vec<ExpressionStatement>);
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Statement {
-    Expression(Expression),
-    VariableDecl(VariableDecl),
-    FunctionDecl(FunctionDecl),
+pub struct ExpressionStatement {
+    pub expr: Expression,
+    pub discarded: bool,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -21,6 +20,20 @@ pub enum Expression {
         left: Box<Expression>,
         operator: InfixOperator,
         right: Box<Expression>,
+    },
+
+    VariableDecl {
+        name: String,
+        value: Box<Expression>,
+        mutable: bool,
+        ty: Option<Type>,
+    },
+
+    Function {
+        name: String,
+        parameters: Vec<FunctionParameter>,
+        return_type: Type,
+        body: Vec<ExpressionStatement>,
     },
 
     FunctionCall {
@@ -58,27 +71,24 @@ pub struct Argument {
 }
 
 #[derive(PartialEq, Eq, Debug)]
+pub enum FunctionParameter {
+    LabeledAtCallsite {
+        internal_name: String,
+        external_name: Option<String>,
+        ty: Type,
+    },
+    UnlabeledAtCallsite {
+        name: String,
+        ty: Type,
+    },
+}
+
+#[derive(PartialEq, Eq, Debug)]
 pub struct VariableDecl {
     pub name: String,
     pub value: Expression,
     pub mutable: bool,
-    pub ty: Type,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct FunctionDecl {
-    pub name: String,
-    pub parameters: Vec<FunctionParameter>,
-    pub return_type: Type,
-    pub body: Vec<Statement>,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct FunctionParameter {
-    pub external_name: Option<String>,
-    pub internal_name: String,
-    pub labeled: bool,
-    pub ty: Type,
+    pub ty: Option<Type>,
 }
 
 #[derive(PartialEq, Eq, Debug)]

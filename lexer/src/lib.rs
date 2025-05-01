@@ -66,7 +66,7 @@ impl Lexer {
             '~' => self.make_single_char_token(Tilde),
             ':' => self.make_single_char_token(Colon),
             ',' => self.make_single_char_token(Comma),
-            '\n' => self.make_single_char_token(Newline),
+            ';' => self.make_single_char_token(Semicolon),
             'a'..='z' | 'A'..='Z' | '_' => {
                 let initial_position = self.position;
                 let ident = self.read_ident();
@@ -136,7 +136,7 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        while matches!(self.peek(0), Some(' ' | '\r' | '\t')) {
+        while matches!(self.peek(0), Some(' ' | '\r' | '\t' | '\n')) {
             self.advance(1);
         }
     }
@@ -173,14 +173,14 @@ mod tests {
     fn all_syntax() {
         let input = r#"
 # variable declaration
-foo :: 4
-bar : Int = 33
+foo :: 4;
+bar : Int = 33;
 
 # functions
 calc :: fun (~x, ~y: Int) Int {
-  z :: x / y
+  z :: x / y;
   z^2
-}
+};
 
 calc(foo, bar)"#
             .trim();
@@ -188,20 +188,17 @@ calc(foo, bar)"#
         expect_tok(
             &mut lexer,
             vec![
-                Newline,
                 Identifier("foo".to_string()),
                 Colon,
                 Colon,
                 IntLiteral(4),
-                Newline,
+                Semicolon,
                 Identifier("bar".to_string()),
                 Colon,
                 Identifier("Int".to_string()),
                 Equal,
                 IntLiteral(33),
-                Newline,
-                Newline,
-                Newline,
+                Semicolon,
                 Identifier("calc".to_string()),
                 Colon,
                 Colon,
@@ -217,21 +214,18 @@ calc(foo, bar)"#
                 RParen,
                 Identifier("Int".to_string()),
                 LBrace,
-                Newline,
                 Identifier("z".to_string()),
                 Colon,
                 Colon,
                 Identifier("x".to_string()),
                 Slash,
                 Identifier("y".to_string()),
-                Newline,
+                Semicolon,
                 Identifier("z".to_string()),
                 Exponent,
                 IntLiteral(2),
-                Newline,
                 RBrace,
-                Newline,
-                Newline,
+                Semicolon,
                 Identifier("calc".to_string()),
                 LParen,
                 Identifier("foo".to_string()),
