@@ -12,6 +12,8 @@ pub enum Expression {
     IntLiteral(isize),
     Ident(String),
 
+    Unit,
+
     Prefix {
         operator: PrefixOperator,
         expression: Box<Expression>,
@@ -30,15 +32,14 @@ pub enum Expression {
     },
 
     Function {
-        name: String,
         parameters: Vec<FunctionParameter>,
-        return_type: Type,
+        return_type: Option<Type>,
         body: Vec<ExpressionStatement>,
     },
 
     FunctionCall {
         name: String,
-        arguments: Vec<Argument>,
+        arguments: Vec<FunctionArgument>,
     },
 }
 
@@ -65,7 +66,7 @@ pub enum InfixOperator {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Argument {
+pub struct FunctionArgument {
     pub label: Option<String>,
     pub value: Expression,
 }

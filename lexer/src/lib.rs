@@ -72,6 +72,7 @@ impl Lexer {
                 let ident = self.read_ident();
                 match ident.as_str() {
                     "fun" => Token::new(Fun, initial_position, 3),
+                    "unit" => Token::new(Unit, initial_position, 4),
                     s => Token::new(Identifier(s.to_string()), initial_position, s.len()),
                 }
             }
@@ -176,6 +177,8 @@ mod tests {
 foo :: 4;
 bar : Int = 33;
 
+unit;
+
 # functions
 calc :: fun (~x, ~y: Int) Int {
   z :: x / y;
@@ -198,6 +201,8 @@ calc(foo, bar)"#
                 Identifier("Int".to_string()),
                 Equal,
                 IntLiteral(33),
+                Semicolon,
+                Unit,
                 Semicolon,
                 Identifier("calc".to_string()),
                 Colon,

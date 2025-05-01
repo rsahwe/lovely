@@ -5,7 +5,8 @@ use crate::span::Span;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     // keywords:
-    Fun, // fun
+    Fun,  // fun
+    Unit, // unit
 
     // syntax
     LParen,    // (
@@ -44,6 +45,7 @@ impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             TokenKind::Fun => "fun",
+            TokenKind::Unit => "unit",
             TokenKind::LParen => "(",
             TokenKind::RParen => ")",
             TokenKind::LBrace => "{",

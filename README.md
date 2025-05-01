@@ -42,23 +42,25 @@ A purpose-built programming language for developing humbleOS
 ## Syntax
 
 ```
--- variable declaration
-val foo <- 4
-mut bar: Int <- 4
+## Lovely
 
--- functions
-fun calc(x, y: Int) -> Int {
-  val z <- x / y
-  z ^ 2
-}
+# variable declaration
+foo :: 4; # constant
+bar : Int = 4; # mutable
 
-calc(x: foo, y: bar)
+# functions
+calc :: fun (~x, ~y: Int) Int {
+  z :: x / y;
+  z^2
+};
 
-fun say_hi(to person: String) {
-  print("hi \(person)")
-}
+calc(foo, bar);
 
-say_hi(to: "Stefan")
+add :: fun (~num: Int, to other_num: Int) {
+  num + other_num
+};
+
+add(3, to: 4);
 ```
 
 ## Language:

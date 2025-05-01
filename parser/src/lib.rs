@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-use ast::{Expression, ExpressionStatement, InfixOperator, Precedence, Program, Type};
+use ast::{
+    Expression, ExpressionStatement, FunctionArgument, FunctionParameter, InfixOperator,
+    Precedence, Program, Type,
+};
 use lexer::tokens::{
     Token,
     TokenKind::{self, *},
@@ -102,11 +105,14 @@ impl Parser {
         let cur_token = self.cur_token();
         match cur_token {
             IntLiteral(_) => Ok(Self::parse_int_literal),
+            Unit => Ok(Self::parse_unit),
             LParen => Ok(Self::parse_grouped_expression),
             Identifier(_) => match self.peek_token() {
                 Colon => Ok(Self::parse_variable_declaration),
+                LParen => Ok(Self::parse_function_call),
                 _ => Ok(Self::parse_variable_ident),
             },
+            Fun => Ok(Self::parse_function_expression),
             _ => Err(Error::NoPrefixParseFn(cur_token.clone())),
         }
     }
@@ -130,8 +136,17 @@ impl Parser {
         Ok(Expression::IntLiteral(self.expect_int()?))
     }
 
+    fn parse_unit(&mut self) -> Result<Expression, Error> {
+        self.expect_token(Unit)?;
+        Ok(Expression::Unit)
+    }
+
     fn parse_variable_ident(&mut self) -> Result<Expression, Error> {
         Ok(Expression::Ident(self.expect_ident()?))
+    }
+
+    fn parse_type(&mut self) -> Result<Type, Error> {
+        Ok(Type::Ident(self.expect_ident()?))
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, Error> {
@@ -146,14 +161,54 @@ impl Parser {
         }
     }
 
+    fn parse_function_call(&mut self) -> Result<Expression, Error> {
+        let name = self.expect_ident()?;
+        self.expect_token(LParen)?;
+
+        let mut arguments = vec![];
+
+        while self.cur_token() != RParen {
+            arguments.push(self.parse_function_argument()?);
+            if self.cur_token() == Comma {
+                self.expect_token(Comma)?;
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        self.expect_token(RParen)?;
+
+        Ok(Expression::FunctionCall { name, arguments })
+    }
+
+    fn parse_function_argument(&mut self) -> Result<FunctionArgument, Error> {
+        let mut label = None;
+        let value: Expression;
+
+        if let Identifier(name) = self.cur_token() {
+            self.expect_ident()?;
+            if self.cur_token() == Colon {
+                self.expect_token(Colon)?;
+                label = Some(name);
+                value = self.parse_expression(Precedence::Lowest)?;
+            } else {
+                value = Expression::Ident(name);
+            }
+        } else {
+            value = self.parse_expression(Precedence::Lowest)?;
+        }
+
+        Ok(FunctionArgument { label, value })
+    }
+
     fn parse_variable_declaration(&mut self) -> Result<Expression, Error> {
         let name = self.expect_ident()?;
         self.expect_token(Colon)?;
 
         let mut ty = None;
-        if let Identifier(name) = self.cur_token() {
-            self.advance();
-            ty = Some(Type::Ident(name));
+        if let Identifier(_) = self.cur_token() {
+            ty = Some(self.parse_type()?);
         }
 
         #[allow(clippy::needless_late_init)]
@@ -182,6 +237,79 @@ impl Parser {
         })
     }
 
+    fn parse_function_expression(&mut self) -> Result<Expression, Error> {
+        self.expect_token(Fun)?;
+        self.expect_token(LParen)?;
+
+        let mut parameters = vec![];
+
+        while self.cur_token() != RParen {
+            parameters.push(self.parse_function_parameter()?);
+            if self.cur_token() == Comma {
+                self.expect_token(Comma)?;
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        self.expect_token(RParen)?;
+
+        let mut return_type = None;
+
+        if let Identifier(_) = self.cur_token() {
+            return_type = Some(self.parse_type()?);
+        }
+
+        self.expect_token(LBrace)?;
+
+        let mut body = vec![];
+
+        while self.cur_token() != RBrace {
+            body.push(self.parse_expression_statement()?);
+        }
+
+        self.expect_token(RBrace)?;
+
+        Ok(Expression::Function {
+            parameters,
+            return_type,
+            body,
+        })
+    }
+
+    fn parse_function_parameter(&mut self) -> Result<FunctionParameter, Error> {
+        match self.cur_token() {
+            Tilde => {
+                self.expect_token(Tilde)?;
+                let name = self.expect_ident()?;
+                self.expect_token(Colon)?;
+                let ty = self.parse_type()?;
+                Ok(FunctionParameter::UnlabeledAtCallsite { name, ty })
+            }
+            Identifier(_) => {
+                let first = self.expect_ident()?;
+                let mut second = None;
+                if let Identifier(name) = self.cur_token() {
+                    self.expect_ident()?;
+                    second = Some(name);
+                }
+                self.expect_token(Colon)?;
+                let ty = self.parse_type()?;
+                Ok(FunctionParameter::LabeledAtCallsite {
+                    internal_name: if let Some(second_ident) = &second {
+                        second_ident.to_string()
+                    } else {
+                        first.clone()
+                    },
+                    external_name: if second.is_some() { Some(first) } else { None },
+                    ty,
+                })
+            }
+            _ => Err(Error::expected("parameter name")),
+        }
+    }
+
     fn check_semicolon(&mut self) -> bool {
         self.cur_token() == Semicolon
     }
@@ -189,7 +317,7 @@ impl Parser {
     fn expect_token(&mut self, kind: TokenKind) -> Result<(), Error> {
         let tok = self.cur_token();
         if tok != kind {
-            Err(Error::Expected(tok.to_string()))
+            Err(Error::syntax_err(&format!("unexpected token: {}", tok)))
         } else {
             self.advance();
             Ok(())
@@ -245,7 +373,10 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ast::{Expression, ExpressionStatement, InfixOperator, Program, Type},
+        ast::{
+            Expression, ExpressionStatement, FunctionArgument, FunctionParameter, InfixOperator,
+            Program, Type,
+        },
         Parser,
     };
     use lexer::{tokens::Token, Lexer};
@@ -282,6 +413,14 @@ mod tests {
             Program(vec![ExpressionStatement {
                 expr: Expression::Ident("foo".to_string()),
                 discarded: true,
+            }]),
+        );
+
+        expect_ast(
+            "unit",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Unit,
+                discarded: false,
             }]),
         );
     }
@@ -423,6 +562,178 @@ mod tests {
                     discarded: false,
                 },
             ]),
-        )
+        );
+    }
+
+    #[test]
+    fn function_expressions() {
+        expect_ast(
+            "fun () { unit }",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Function {
+                    parameters: vec![],
+                    return_type: None,
+                    body: vec![ExpressionStatement {
+                        expr: Expression::Unit,
+                        discarded: false,
+                    }],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "fun () Int { 8 }",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Function {
+                    parameters: vec![],
+                    return_type: Some(Type::Ident("Int".to_string())),
+                    body: vec![ExpressionStatement {
+                        expr: Expression::IntLiteral(8),
+                        discarded: false,
+                    }],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "fun () Int { x :: 8; x }",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Function {
+                    parameters: vec![],
+                    return_type: Some(Type::Ident("Int".to_string())),
+                    body: vec![
+                        ExpressionStatement {
+                            expr: Expression::VariableDecl {
+                                name: "x".to_string(),
+                                value: Box::new(Expression::IntLiteral(8)),
+                                mutable: false,
+                                ty: None,
+                            },
+                            discarded: true,
+                        },
+                        ExpressionStatement {
+                            expr: Expression::Ident("x".to_string()),
+                            discarded: false,
+                        },
+                    ],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "fun (x: Int) Int { x }",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Function {
+                    parameters: vec![FunctionParameter::LabeledAtCallsite {
+                        internal_name: "x".to_string(),
+                        external_name: None,
+                        ty: Type::Ident("Int".to_string()),
+                    }],
+                    return_type: Some(Type::Ident("Int".to_string())),
+                    body: vec![ExpressionStatement {
+                        expr: Expression::Ident("x".to_string()),
+                        discarded: false,
+                    }],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "fun (external internal: Int) Int { internal }",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Function {
+                    parameters: vec![FunctionParameter::LabeledAtCallsite {
+                        internal_name: "internal".to_string(),
+                        external_name: Some("external".to_string()),
+                        ty: Type::Ident("Int".to_string()),
+                    }],
+                    return_type: Some(Type::Ident("Int".to_string())),
+                    body: vec![ExpressionStatement {
+                        expr: Expression::Ident("internal".to_string()),
+                        discarded: false,
+                    }],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "fun (~x: Int) Int { x }",
+            Program(vec![ExpressionStatement {
+                expr: Expression::Function {
+                    parameters: vec![FunctionParameter::UnlabeledAtCallsite {
+                        name: "x".to_string(),
+                        ty: Type::Ident("Int".to_string()),
+                    }],
+                    return_type: Some(Type::Ident("Int".to_string())),
+                    body: vec![ExpressionStatement {
+                        expr: Expression::Ident("x".to_string()),
+                        discarded: false,
+                    }],
+                },
+                discarded: false,
+            }]),
+        );
+    }
+
+    #[test]
+    fn function_calls() {
+        expect_ast(
+            "print(3)",
+            Program(vec![ExpressionStatement {
+                expr: Expression::FunctionCall {
+                    name: "print".to_string(),
+                    arguments: vec![FunctionArgument {
+                        label: None,
+                        value: Expression::IntLiteral(3),
+                    }],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "print(3, 4)",
+            Program(vec![ExpressionStatement {
+                expr: Expression::FunctionCall {
+                    name: "print".to_string(),
+                    arguments: vec![
+                        FunctionArgument {
+                            label: None,
+                            value: Expression::IntLiteral(3),
+                        },
+                        FunctionArgument {
+                            label: None,
+                            value: Expression::IntLiteral(4),
+                        },
+                    ],
+                },
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "print(3, and: 4)",
+            Program(vec![ExpressionStatement {
+                expr: Expression::FunctionCall {
+                    name: "print".to_string(),
+                    arguments: vec![
+                        FunctionArgument {
+                            label: None,
+                            value: Expression::IntLiteral(3),
+                        },
+                        FunctionArgument {
+                            label: Some("and".to_string()),
+                            value: Expression::IntLiteral(4),
+                        },
+                    ],
+                },
+                discarded: false,
+            }]),
+        );
     }
 }

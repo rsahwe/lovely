@@ -17,3 +17,8 @@ add :: fun (~num: Int, to other_num: Int) {
 };
 
 add(3, to: 4);
+
+returns_unit :: fun () {
+  unit
+}
+
