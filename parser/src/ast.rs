@@ -9,6 +9,7 @@ pub struct ExpressionStatement {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Expression {
+    BoolLiteral(bool),
     IntLiteral(isize),
     Ident(String),
 

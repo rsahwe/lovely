@@ -105,6 +105,7 @@ impl Parser {
         let cur_token = self.cur_token();
         match cur_token {
             IntLiteral(_) => Ok(Self::parse_int_literal),
+            True | False => Ok(Self::parse_bool_literal),
             Unit => Ok(Self::parse_unit),
             LParen => Ok(Self::parse_grouped_expression),
             Identifier(_) => match self.peek_token() {
@@ -134,6 +135,20 @@ impl Parser {
 
     fn parse_int_literal(&mut self) -> Result<Expression, Error> {
         Ok(Expression::IntLiteral(self.expect_int()?))
+    }
+
+    fn parse_bool_literal(&mut self) -> Result<Expression, Error> {
+        match self.cur_token() {
+            True => {
+                self.expect_token(True)?;
+                Ok(Expression::BoolLiteral(true))
+            }
+            False => {
+                self.expect_token(False)?;
+                Ok(Expression::BoolLiteral(false))
+            }
+            _ => Err(Error::expected("true or false")),
+        }
     }
 
     fn parse_unit(&mut self) -> Result<Expression, Error> {
@@ -422,6 +437,20 @@ mod tests {
                 expr: Expression::Unit,
                 discarded: false,
             }]),
+        );
+
+        expect_ast(
+            "true; false",
+            Program(vec![
+                ExpressionStatement {
+                    expr: Expression::BoolLiteral(true),
+                    discarded: true,
+                },
+                ExpressionStatement {
+                    expr: Expression::BoolLiteral(false),
+                    discarded: false,
+                },
+            ]),
         );
     }
 

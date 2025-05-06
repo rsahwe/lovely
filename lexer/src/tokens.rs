@@ -5,8 +5,10 @@ use crate::span::Span;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     // keywords:
-    Fun,  // fun
-    Unit, // unit
+    Fun,   // fun
+    Unit,  // unit
+    True,  // true
+    False, // false
 
     // syntax
     LParen,    // (
@@ -46,6 +48,8 @@ impl Display for TokenKind {
         let str = match self {
             TokenKind::Fun => "fun",
             TokenKind::Unit => "unit",
+            TokenKind::True => "true",
+            TokenKind::False => "false",
             TokenKind::LParen => "(",
             TokenKind::RParen => ")",
             TokenKind::LBrace => "{",
