@@ -2,7 +2,6 @@
 
 use tokens::{Token, TokenKind};
 
-mod span;
 pub mod tokens;
 
 pub struct Lexer {
@@ -24,7 +23,7 @@ impl Lexer {
         self.skip_whitespace();
 
         let Some(cur_char) = self.peek(0) else {
-            return Token::new(Eof, self.position, 1);
+            return Token::new(Eof, &self.content, self.position, 1);
         };
 
         match cur_char {
@@ -71,11 +70,16 @@ impl Lexer {
                 let initial_position = self.position;
                 let ident = self.read_ident();
                 match ident.as_str() {
-                    "fun" => Token::new(Fun, initial_position, 3),
-                    "unit" => Token::new(Unit, initial_position, 4),
-                    "true" => Token::new(True, initial_position, 4),
-                    "false" => Token::new(False, initial_position, 5),
-                    s => Token::new(Identifier(s.to_string()), initial_position, s.len()),
+                    "fun" => Token::new(Fun, &self.content, initial_position, 3),
+                    "unit" => Token::new(Unit, &self.content, initial_position, 4),
+                    "true" => Token::new(True, &self.content, initial_position, 4),
+                    "false" => Token::new(False, &self.content, initial_position, 5),
+                    s => Token::new(
+                        Identifier(s.to_string()),
+                        &self.content,
+                        initial_position,
+                        s.len(),
+                    ),
                 }
             }
             '0'..='9' => {
@@ -83,6 +87,7 @@ impl Lexer {
                 let int = self.read_int();
                 Token::new(
                     IntLiteral(int),
+                    &self.content,
                     initial_position,
                     self.position - initial_position + 1,
                 )
@@ -106,13 +111,13 @@ impl Lexer {
     }
 
     fn make_single_char_token(&mut self, kind: TokenKind) -> Token {
-        let tok = Token::new(kind, self.position, 1);
+        let tok = Token::new(kind, &self.content, self.position, 1);
         self.advance(1);
         tok
     }
 
     fn make_double_char_token(&mut self, kind: TokenKind) -> Token {
-        let tok = Token::new(kind, self.position, 2);
+        let tok = Token::new(kind, &self.content, self.position, 2);
         self.advance(2);
         tok
     }

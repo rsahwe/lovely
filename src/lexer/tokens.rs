@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::span::Span;
+use crate::span::Span;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
@@ -86,13 +86,10 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, start: usize, size: usize) -> Self {
+    pub fn new(kind: TokenKind, source: &str, start: usize, size: usize) -> Self {
         Token {
             kind,
-            position: Span {
-                start,
-                end: start + size - 1,
-            },
+            position: Span::from_text(source, start, start + size - 1),
         }
     }
 }
