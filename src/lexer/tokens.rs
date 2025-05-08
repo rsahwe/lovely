@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::span::Span;
+use super::span::Span;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {

@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
+use crate::lexer::tokens::{
+    Token,
+    TokenKind::{self, *},
+};
 use ast::{
     Expression, ExpressionStatement, FunctionArgument, FunctionParameter, InfixOperator,
     Precedence, Program, Type,
-};
-use lexer::tokens::{
-    Token,
-    TokenKind::{self, *},
 };
 
 pub mod ast;
@@ -388,13 +388,15 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ast::{
-            Expression, ExpressionStatement, FunctionArgument, FunctionParameter, InfixOperator,
-            Program, Type,
+        lexer::{Lexer, tokens::Token},
+        parser::{
+            Parser,
+            ast::{
+                Expression, ExpressionStatement, FunctionArgument, FunctionParameter,
+                InfixOperator, Program, Type,
+            },
         },
-        Parser,
     };
-    use lexer::{tokens::Token, Lexer};
     use pretty_assertions::assert_eq;
 
     fn expect_ast(input: &str, ast: Program) {

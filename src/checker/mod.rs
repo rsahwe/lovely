@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use parser::ast::Program;
+use crate::parser::ast::Program;
 
 type ScopeId = usize;
 
@@ -39,7 +39,9 @@ struct CheckedExpressionStatement {
     expr: CheckedExpression,
 }
 
-enum CheckedExpression {}
+enum CheckedExpression {
+    // Unit { span: Span },
+}
 
 // #[cfg(test)]
 // mod tests {}
