@@ -1,2 +1,4 @@
-- [ ] support for numbers in identifiers as long as it isn't the first char
+- [x] support for numbers in identifiers as long as it isn't the first char
 - [ ] support for variable declaratoin without initialization
+- [ ] bitwise operators
+- [ ] logical operators

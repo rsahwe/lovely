@@ -1,75 +1,89 @@
 # The Lovely Programming Language
 
-A purpose-built programming language for developing humbleOS
+Lovely is a low-level systems programming language, designed to be used to create the Humble operating system.
 
-# Language
-- [/] lex
-- [/] parse
-- [ ] typecheck <-
-- [ ] asm gen
+## The language
 
-# Tools
-- [/] tree-sitter parser
-- [ ] language server
-- [ ] formatter
-- [ ] package manager
+### Variable declarations
 
-# Next steps
-- [x] parse what we can lex <-
-- [x] tree-sitter grammar
+Mutable variables are declared using `:=`, and immutable ones with `::`:
 
-## Core philosophies
-1. if readability isn't lessened, less syntax is better
-
-## Features (from discord)
-- inline assembly
-- no tabs
-- strong type system
-- compiled
-- fast compilation
-- good enums w/ associated values
-- first-class functions
-- open source ✅
-- a video series ✅
-- interfaces/traits/protocols
-- pattern matching
-- algebraic data types
-- anonymous sum and product types
-- labeled tuples
-- immutability by default
-- compile time evaluation
-- typed errors
-- stack trace stuff
-- custom operators
-
-## To be debated:
-- C-style squirrelies
-
-## Syntax
-
+```lovely
+foo := 4; # mutable var
+bar :: 2; # immutable var
 ```
-## Lovely
 
-# variable declaration
-foo :: 4; # constant
-bar : Int = 4; # mutable
+Types are infered, but can be specified like so:
 
-# functions
-calc :: fun (~x, ~y: Int) Int {
-  z :: x / y;
-  z^2
-};
+```lovely
+foo : Int = 4;
+bar : Int : 2;
+```
 
-calc(foo, bar);
+If you specify the type, you can declare and initialize a variable on two differnt lines:
 
-add :: fun (~num: Int, to other_num: Int) {
-  num + other_num
+```lovely
+# declare foo
+foo : Int;
+
+# later...
+foo = 4;
+```
+
+### Comments
+
+Comments begin with `#` and continue to the end of the line.
+
+### Types
+
+Lovely supports the following primitive data types:
+
+- `Int`: a signed int of size TODO
+- `Unit`: equivalent to `void` or `()` in some other languages
+- `Bool`: `true` or `false`
+
+### Operators
+
+Lovely supports the following operators:
+
+Arithmentic:
+- `+`: addition
+- `-`: minus if infix, negative if prefix
+- `*`: multiplication
+- `/`: division
+- `^`: exponentiation
+
+Comparative:
+- `==`: equality
+- `!=`: inequality
+- `<`: less than
+- `>`: greater than
+- `<=`: less than or equal
+- `>=`: greater than or equal
+
+Logical operators:
+- `!`: negates a boolean
+
+Parentheses can be used to group expressions:
+
+```lovely
+3 * (4 + 5)
+```
+
+### Function expressions
+
+Function expressions use the following format:
+
+```lovely
+fun (<parameters>) <return_type> { <body> }
+```
+
+Function parameters can optionally have two labels, one for use inside the function implementation, and one for the callsite; if you only use one label, it will be used in both places. If you don't want to have to provide a label at the callsite, prefix the label with `~`.
+
+```lovely
+add :: fun (~first: Int, to second: Int) Int {
+  first + second
 };
 
 add(3, to: 4);
 ```
-
-## Language:
-
-- rust
-- ocaml

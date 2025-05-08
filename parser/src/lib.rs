@@ -9,7 +9,7 @@ use lexer::tokens::{
     TokenKind::{self, *},
 };
 
-mod ast;
+pub mod ast;
 
 type PrefixParseFn = fn(&mut Parser) -> Result<Expression, Error>;
 

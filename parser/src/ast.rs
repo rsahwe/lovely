@@ -46,8 +46,7 @@ pub enum Expression {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum PrefixOperator {
-    Not,
-    Positive,
+    LogicalNot,
     Negative,
 }
 
