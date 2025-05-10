@@ -46,7 +46,9 @@ impl Lexer {
             '-' => self.make_single_char_token(Minus),
             '/' => self.make_single_char_token(Slash),
             '*' => self.make_single_char_token(Asterisk),
-            '^' => self.make_single_char_token(Exponent),
+            '&' => self.make_single_char_token(BitAnd),
+            '|' => self.make_single_char_token(BitOr),
+            '^' => self.make_single_char_token(BitXor),
             '=' => match self.peek(1) {
                 Some('=') => self.make_double_char_token(DoubleEqual),
                 _ => self.make_single_char_token(Equal),
