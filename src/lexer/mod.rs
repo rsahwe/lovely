@@ -243,7 +243,7 @@ calc(foo, bar)"#
                 False,
                 Semicolon,
                 Identifier("z".to_string()),
-                Exponent,
+                BitXor,
                 IntLiteral(2),
                 RBrace,
                 Semicolon,
