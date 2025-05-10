@@ -2,6 +2,10 @@
 
 Lovely is a low-level systems programming language, designed to be used to create the Humble operating system.
 
+## Contributing:
+
+All language features are being developed on live stream on my [YouTube channel](https://www.youtube.com/@kiahjh-dev); however, if you you have any optimizations/enhancements/fixes you want to contribute, please feel free to open a PR! I'm not currently accepting PRs that add new features/functionality to the language, because this is a learning project and I'd like to give those things a shot myself.
+
 ## The language
 
 ### Variable declarations
