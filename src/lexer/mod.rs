@@ -192,9 +192,10 @@ unit;
 # functions
 calc :: fun (~x, ~y: Int) Int {
   z :: x / y;
+  f :: ~((x & y) | (3 ^ 2));
   true;
   false;
-  z^2
+  z*z
 };
 
 calc(foo, bar)"#
@@ -238,13 +239,31 @@ calc(foo, bar)"#
                 Slash,
                 Identifier("y".to_string()),
                 Semicolon,
+                Identifier("f".to_string()),
+                Colon,
+                Colon,
+                Tilde,
+                LParen,
+                LParen,
+                Identifier("x".to_string()),
+                BitAnd,
+                Identifier("y".to_string()),
+                RParen,
+                BitOr,
+                LParen,
+                IntLiteral(3),
+                BitXor,
+                IntLiteral(2),
+                RParen,
+                RParen,
+                Semicolon,
                 True,
                 Semicolon,
                 False,
                 Semicolon,
                 Identifier("z".to_string()),
-                BitXor,
-                IntLiteral(2),
+                Asterisk,
+                Identifier("z".to_string()),
                 RBrace,
                 Semicolon,
                 Identifier("calc".to_string()),
