@@ -27,7 +27,9 @@ pub enum TokenKind {
     Minus,              // -
     Slash,              // /
     Asterisk,           // *
-    Exponent,           // ^
+    BitAnd,             // &
+    BitOr,              // |
+    BitXor,             // ^
     DoubleEqual,        // ==
     NotEqual,           // !=
     LessThan,           // <
@@ -64,7 +66,9 @@ impl Display for TokenKind {
             TokenKind::Minus => "-",
             TokenKind::Slash => "/",
             TokenKind::Asterisk => "*",
-            TokenKind::Exponent => "^",
+            TokenKind::BitAnd => "&",
+            TokenKind::BitOr => "|",
+            TokenKind::BitXor => "^",
             TokenKind::DoubleEqual => "=",
             TokenKind::NotEqual => "!=",
             TokenKind::LessThan => "<",

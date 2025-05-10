@@ -55,7 +55,6 @@ Arithmentic:
 - `-`: minus if infix, negative if prefix
 - `*`: multiplication
 - `/`: division
-- `^`: exponentiation
 
 Comparative:
 - `==`: equality
@@ -67,6 +66,12 @@ Comparative:
 
 Logical operators:
 - `!`: negates a boolean
+
+Bitwise operators:
+- `&`: bitwise and
+- `|`: bitwise or
+- `^`: bitwise xor
+- `~`: bitwise negation
 
 Parentheses can be used to group expressions:
 
