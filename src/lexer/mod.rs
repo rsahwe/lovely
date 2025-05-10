@@ -4,6 +4,7 @@ use tokens::{Token, TokenKind};
 
 pub mod tokens;
 
+#[derive(Clone)]
 pub struct Lexer {
     content: String,
     position: usize,
@@ -17,7 +18,7 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> Token {
         use tokens::TokenKind::*;
 
         self.skip_whitespace();
@@ -67,7 +68,7 @@ impl Lexer {
             ',' => self.make_single_char_token(Comma),
             ';' => self.make_single_char_token(Semicolon),
             'a'..='z' | 'A'..='Z' | '_' => {
-                let initial_position = self.position;
+                let initial_position = self.position + 1;
                 let ident = self.read_ident();
                 match ident.as_str() {
                     "fun" => Token::new(Fun, &self.content, initial_position, 3),
@@ -83,7 +84,7 @@ impl Lexer {
                 }
             }
             '0'..='9' => {
-                let initial_position = self.position;
+                let initial_position = self.position + 1;
                 let int = self.read_int();
                 Token::new(
                     IntLiteral(int),
@@ -111,7 +112,7 @@ impl Lexer {
     }
 
     fn make_single_char_token(&mut self, kind: TokenKind) -> Token {
-        let tok = Token::new(kind, &self.content, self.position, 1);
+        let tok = Token::new(kind, &self.content, self.position + 1, 1);
         self.advance(1);
         tok
     }

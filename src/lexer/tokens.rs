@@ -82,14 +82,14 @@ impl Display for TokenKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
-    pub position: Span,
+    pub span: Span,
 }
 
 impl Token {
     pub fn new(kind: TokenKind, source: &str, start: usize, size: usize) -> Self {
         Token {
             kind,
-            position: Span::from_text(source, start, start + size - 1),
+            span: Span::from_text(source, start, start + size - 1),
         }
     }
 }

@@ -1,10 +1,13 @@
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Copy)]
 pub struct Span {
     pub start: Position,
     pub end: Position,
 }
 
 impl Span {
+    pub fn from_range(start: Position, end: Position) -> Self {
+        Self { start, end }
+    }
     pub fn from_text(text: &str, start: usize, end: usize) -> Self {
         Self {
             start: Position::from_char_index(text, start),
@@ -13,21 +16,28 @@ impl Span {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Copy)]
 pub struct Position {
     pub line: usize,
     pub column: usize,
 }
 
 impl Position {
+    pub fn line_col(line: usize, column: usize) -> Self {
+        Self { line, column }
+    }
+
     pub fn from_char_index(text: &str, index: usize) -> Self {
-        let bytes = text.chars().collect::<Vec<_>>();
+        let bytes = text.chars();
 
         let mut line = 1;
         let mut column = 1;
         let mut position = 1;
 
         for byte in bytes {
+            if position >= index {
+                break;
+            }
             match byte {
                 '\n' => {
                     line += 1;
@@ -36,9 +46,6 @@ impl Position {
                 _ => column += 1,
             }
             position += 1;
-            if position >= index {
-                break;
-            }
         }
 
         Self { line, column }

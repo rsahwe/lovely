@@ -1,33 +1,39 @@
 #![allow(dead_code)]
 
-use std::ops::Deref;
-
 use crate::{
-    parser::ast::{Expression, ExpressionStatement, Program},
+    parser::ast::{Expression, ExpressionKind, ExpressionStatement, Program},
     span::Span,
 };
+use scopes::{Scope, ScopeId, ScopedType};
 
-type ScopeId = usize;
+mod scopes;
+
 type TypeId = usize;
 
-struct Scope {
-    parent_scope: Option<ScopeId>,
-}
+const INT_ID: usize = 0;
+const BOOL_ID: usize = 1;
+const UNIT_ID: usize = 2;
 
 struct Checker {
     scopes: Vec<Scope>,
     types: Vec<ScopedType>,
+    type_errors: Vec<TypeError>,
 }
 
-struct ScopedType {
-    name: String,
-    scope_id: ScopeId,
+#[derive(Debug)]
+struct TypeError {
+    span: Span,
+    kind: TypeErrorKind,
 }
-impl ScopedType {
-    fn new(name: &str, scope_id: ScopeId) -> Self {
-        ScopedType {
-            name: name.to_string(),
-            scope_id,
+#[derive(Debug)]
+enum TypeErrorKind {
+    TypeMismatch { expected: TypeId, got: TypeId },
+}
+impl TypeError {
+    fn mismatch(expected: TypeId, got: TypeId, span: Span) -> TypeError {
+        TypeError {
+            span,
+            kind: TypeErrorKind::TypeMismatch { expected, got },
         }
     }
 }
@@ -42,6 +48,7 @@ impl Checker {
                 ScopedType::new("Bool", 0),
                 ScopedType::new("Unit", 0),
             ],
+            type_errors: vec![],
         }
     }
 
@@ -52,7 +59,7 @@ impl Checker {
         self.scopes.len() - 1
     }
 
-    fn lookup_type(&self, name: String, scope_id: ScopeId) -> Option<TypeId> {
+    fn lookup_type(&self, name: &str, scope_id: ScopeId) -> Option<TypeId> {
         let cur_scope = &self.scopes[scope_id];
         if let Some(type_id) = self
             .types
@@ -69,11 +76,10 @@ impl Checker {
 
     fn check_program(&mut self, program: &Program) -> CheckedProgram {
         CheckedProgram {
-            span: todo!(),
             stmts: program
                 .0
                 .iter()
-                .map(|s| self.check_expression_statment(s))
+                .map(|s| self.check_expression_statment(s).unwrap())
                 .collect(),
         }
     }
@@ -81,35 +87,50 @@ impl Checker {
     fn check_expression_statment(
         &mut self,
         stmt: &ExpressionStatement,
-    ) -> CheckedExpressionStatement {
-        CheckedExpressionStatement {
-            span: todo!(),
-            expr: self.check_expression(&stmt.expr),
-        }
+    ) -> Result<CheckedExpressionStatement, TypeError> {
+        Ok(CheckedExpressionStatement {
+            expr: self.check_expression(&stmt.expr, None)?,
+        })
     }
 
-    // TODO: add `type_hint`
-    fn check_expression(&mut self, expr: &Expression) -> CheckedExpression {
-        match expr {
+    fn check_expression(
+        &mut self,
+        expr: &Expression,
+        type_hint: Option<TypeId>,
+    ) -> Result<CheckedExpression, TypeError> {
+        match expr.kind {
+            ExpressionKind::Unit => {
+                if let Some(type_hint) = type_hint {
+                    if type_hint == UNIT_ID {
+                        Ok(CheckedExpression::new(CheckedExpressionData::Unit, UNIT_ID))
+                    } else {
+                        Err(TypeError::mismatch(type_hint, UNIT_ID, expr.span))
+                    }
+                } else {
+                    Ok(CheckedExpression::new(CheckedExpressionData::Unit, UNIT_ID))
+                }
+            }
             _ => todo!(),
         }
     }
 }
 
 struct CheckedProgram {
-    span: Span,
     stmts: Vec<CheckedExpressionStatement>,
 }
 
 struct CheckedExpressionStatement {
-    span: Span,
     expr: CheckedExpression,
 }
 
 struct CheckedExpression {
-    span: Span,
     type_id: TypeId,
     data: CheckedExpressionData,
+}
+impl CheckedExpression {
+    fn new(data: CheckedExpressionData, type_id: TypeId) -> Self {
+        Self { type_id, data }
+    }
 }
 
 enum CheckedExpressionData {

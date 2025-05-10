@@ -19,7 +19,7 @@
 
 ## Features (from discord)
 - inline assembly
-- no tabs
+- no tabs ✅
 - strong type system
 - compiled
 - fast compilation
@@ -37,6 +37,7 @@
 - typed errors
 - stack trace stuff
 - custom operators
+- field traits
 
 ## To be debated:
 - C-style squirrelies
@@ -65,7 +66,52 @@ add :: fun (~num: Int, to other_num: Int) {
 add(3, to: 4);
 ```
 
-## Language:
+## User-defined types
 
-- rust
-- ocaml
+```lovely
+# everything is an enum (lovel-enums)
+
+Expression :: {
+  @span: Span,
+  
+  literal(Int),
+  variable(String),
+  call({
+   @name: String,
+   @args: List<Expression>,
+  }),
+}
+
+Species :: {
+  dog,
+  cat,
+  fish,
+  other(String),
+}
+
+Animal :: {
+  @size: Int,
+  @does_bite: Bool,
+  @can_bite: Bool,
+  @species: Species,
+};
+
+foo := Animal {
+  size      = 4,
+  does_bite = true,
+  can_bite  = false,
+  species   = Species.other("hamster"),
+};
+
+fry :: fun (~s: Species) {
+  print("Frying up a \(Species@to_string())")
+}
+fry(.fish)
+
+expr := Expression.call({
+  name = "foo",
+  args = [],
+}) {
+  span = ...
+};
+```

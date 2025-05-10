@@ -1,3 +1,5 @@
+use crate::span::Span;
+
 #[derive(PartialEq, Eq, Debug)]
 pub struct Program(pub Vec<ExpressionStatement>);
 
@@ -8,7 +10,18 @@ pub struct ExpressionStatement {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Expression {
+pub struct Expression {
+    pub span: Span,
+    pub kind: ExpressionKind,
+}
+impl Expression {
+    pub fn new(kind: ExpressionKind, span: Span) -> Self {
+        Self { span, kind }
+    }
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub enum ExpressionKind {
     BoolLiteral(bool),
     IntLiteral(isize),
     Ident(String),
@@ -97,7 +110,7 @@ pub enum Type {
     Ident(String),
 }
 
-#[derive(Ord, Eq, PartialEq, PartialOrd)]
+#[derive(Ord, Eq, PartialEq, PartialOrd, Debug)]
 pub enum Precedence {
     Lowest,
     Sum,     // + or -
