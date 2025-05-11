@@ -38,9 +38,9 @@ pub enum TokenKind {
     GreaterThanOrEqual, // >=
 
     // idents
-    Identifier(String), // variable/type names
+    Identifier, // variable/type names
 
-    IntLiteral(isize),
+    IntLiteral,
 
     Eof,
 }
@@ -75,8 +75,8 @@ impl Display for TokenKind {
             TokenKind::GreaterThan => ">",
             TokenKind::LessThanOrEqual => "<=",
             TokenKind::GreaterThanOrEqual => ">=",
-            TokenKind::Identifier(i) => i,
-            TokenKind::IntLiteral(i) => &format!("{i}"),
+            TokenKind::Identifier => "identifier",
+            TokenKind::IntLiteral => "integer literal",
             TokenKind::Eof => "EOF",
         };
         f.write_str(str)
@@ -90,10 +90,10 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, source: &str, start: usize, size: usize) -> Self {
+    pub fn new(kind: TokenKind, start: usize, size: usize) -> Self {
         Token {
             kind,
-            span: Span::from_text(source, start, start + size - 1),
+            span: Span::from_range(start, start + size),
         }
     }
 }

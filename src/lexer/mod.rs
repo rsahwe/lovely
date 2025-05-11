@@ -1,20 +1,23 @@
 #![allow(dead_code)]
 
+use std::iter::Peekable;
+use std::str::CharIndices;
+
 use tokens::{Token, TokenKind};
 
 pub mod tokens;
 
 #[derive(Clone)]
-pub struct Lexer {
-    content: String,
-    position: usize,
+pub struct Lexer<'src> {
+    content: &'src str,
+    chars: Peekable<CharIndices<'src>>,
 }
 
-impl Lexer {
-    pub fn new(program: &str) -> Self {
+impl<'src> Lexer<'src> {
+    pub fn new(program: &'src str) -> Self {
         Lexer {
-            content: program.to_string(),
-            position: 0,
+            content: program,
+            chars: program.char_indices().peekable(),
         }
     }
 
@@ -23,137 +26,146 @@ impl Lexer {
 
         self.skip_whitespace();
 
-        let Some(cur_char) = self.peek(0) else {
-            return Token::new(Eof, &self.content, self.position, 1);
+        let Some((cur_index, cur_char)) = self.peek() else {
+            return Token::new(Eof, self.content.len(), 1);
         };
 
         match cur_char {
             '#' => {
-                self.advance(1);
-                while let Some(c) = self.peek(0) {
+                self.next();
+                while let Some((_, c)) = self.peek() {
                     if c == '\n' {
                         break;
                     }
-                    self.advance(1);
+                    self.next();
                 }
                 self.next_token()
             }
-            '!' => match self.peek(1) {
-                Some('=') => self.make_double_char_token(NotEqual),
-                _ => self.make_single_char_token(Not),
-            },
-            '+' => self.make_single_char_token(Plus),
-            '-' => self.make_single_char_token(Minus),
-            '/' => self.make_single_char_token(Slash),
-            '*' => self.make_single_char_token(Asterisk),
-            '&' => self.make_single_char_token(BitAnd),
-            '|' => self.make_single_char_token(BitOr),
-            '^' => self.make_single_char_token(BitXor),
-            '=' => match self.peek(1) {
-                Some('=') => self.make_double_char_token(DoubleEqual),
-                _ => self.make_single_char_token(Equal),
-            },
-            '<' => match self.peek(1) {
-                Some('=') => self.make_double_char_token(LessThanOrEqual),
-                _ => self.make_single_char_token(LessThan),
-            },
-            '>' => match self.peek(1) {
-                Some('=') => self.make_double_char_token(GreaterThanOrEqual),
-                _ => self.make_single_char_token(GreaterThan),
-            },
-            '(' => self.make_single_char_token(LParen),
-            ')' => self.make_single_char_token(RParen),
-            '{' => self.make_single_char_token(LBrace),
-            '}' => self.make_single_char_token(RBrace),
-            '~' => self.make_single_char_token(Tilde),
-            ':' => self.make_single_char_token(Colon),
-            ',' => self.make_single_char_token(Comma),
-            ';' => self.make_single_char_token(Semicolon),
+            '+' => self.make_single_char_token(cur_index, Plus),
+            '-' => self.make_single_char_token(cur_index, Minus),
+            '/' => self.make_single_char_token(cur_index, Slash),
+            '*' => self.make_single_char_token(cur_index, Asterisk),
+            '&' => self.make_single_char_token(cur_index, BitAnd),
+            '|' => self.make_single_char_token(cur_index, BitOr),
+            '^' => self.make_single_char_token(cur_index, BitXor),
+            '=' => {
+                self.next();
+                if self
+                    .chars
+                    .next_if(|(next_index, next_char)| *next_char == '=')
+                    .is_some()
+                {
+                    Token::new(DoubleEqual, cur_index, 2)
+                } else {
+                    Token::new(Equal, cur_index, 1)
+                }
+            }
+            '!' => {
+                self.next();
+                if self
+                    .chars
+                    .next_if(|(_, next_char)| *next_char == '=')
+                    .is_some()
+                {
+                    Token::new(NotEqual, cur_index, 2)
+                } else {
+                    Token::new(Not, cur_index, 1)
+                }
+            }
+            '<' => {
+                self.next();
+                if self
+                    .chars
+                    .next_if(|(_, next_char)| *next_char == '=')
+                    .is_some()
+                {
+                    Token::new(LessThanOrEqual, cur_index, 2)
+                } else {
+                    Token::new(LessThan, cur_index, 1)
+                }
+            }
+            '>' => {
+                self.next();
+                if self
+                    .chars
+                    .next_if(|(_, next_char)| *next_char == '=')
+                    .is_some()
+                {
+                    Token::new(GreaterThanOrEqual, cur_index, 2)
+                } else {
+                    Token::new(GreaterThan, cur_index, 1)
+                }
+            }
+            '(' => self.make_single_char_token(cur_index, LParen),
+            ')' => self.make_single_char_token(cur_index, RParen),
+            '{' => self.make_single_char_token(cur_index, LBrace),
+            '}' => self.make_single_char_token(cur_index, RBrace),
+            '~' => self.make_single_char_token(cur_index, Tilde),
+            ':' => self.make_single_char_token(cur_index, Colon),
+            ',' => self.make_single_char_token(cur_index, Comma),
+            ';' => self.make_single_char_token(cur_index, Semicolon),
             'a'..='z' | 'A'..='Z' | '_' => {
-                let initial_position = self.position + 1;
-                let ident = self.read_ident();
-                match ident.as_str() {
-                    "fun" => Token::new(Fun, &self.content, initial_position, 3),
-                    "unit" => Token::new(Unit, &self.content, initial_position, 4),
-                    "true" => Token::new(True, &self.content, initial_position, 4),
-                    "false" => Token::new(False, &self.content, initial_position, 5),
-                    s => Token::new(
-                        Identifier(s.to_string()),
-                        &self.content,
-                        initial_position,
-                        s.len(),
-                    ),
+                let ident = self.read_ident(cur_index);
+                match ident {
+                    "fun" => Token::new(Fun, cur_index, 3),
+                    "unit" => Token::new(Unit, cur_index, 4),
+                    "true" => Token::new(True, cur_index, 4),
+                    "false" => Token::new(False, cur_index, 5),
+                    s => Token::new(Identifier, cur_index, s.len()),
                 }
             }
             '0'..='9' => {
-                let initial_position = self.position + 1;
-                let int = self.read_int();
-                Token::new(
-                    IntLiteral(int),
-                    &self.content,
-                    initial_position,
-                    self.position - initial_position + 1,
-                )
+                let size = self.read_int(cur_index);
+                Token::new(IntLiteral, cur_index, size)
             }
             c => panic!("illegal token: {c}"),
         }
     }
 
-    fn peek(&self, distance: usize) -> Option<char> {
-        self.content.chars().nth(self.position + distance)
+    fn peek(&mut self) -> Option<(usize, char)> {
+        self.chars.peek().copied()
     }
 
-    fn next(&mut self) -> Option<char> {
-        let char = self.peek(0);
-        self.position += 1;
-        char
+    fn next(&mut self) -> Option<(usize, char)> {
+        self.chars.next()
     }
 
-    fn advance(&mut self, distance: usize) {
-        self.position += distance;
-    }
-
-    fn make_single_char_token(&mut self, kind: TokenKind) -> Token {
-        let tok = Token::new(kind, &self.content, self.position + 1, 1);
-        self.advance(1);
+    fn make_single_char_token(&mut self, position: usize, kind: TokenKind) -> Token {
+        let tok = Token::new(kind, position, 1);
+        self.next();
         tok
     }
 
-    fn make_double_char_token(&mut self, kind: TokenKind) -> Token {
-        let tok = Token::new(kind, &self.content, self.position, 2);
-        self.advance(2);
-        tok
+    fn read_ident(&mut self, position: usize) -> &'src str {
+        let mut last = position;
+        while self
+            .peek()
+            .is_some_and(|(_, c)| c.is_ascii_alphanumeric() || c == '_')
+        {
+            let (l, _) = self.next().unwrap();
+            last = l;
+        }
+        &self.content[position..last + 1]
     }
 
-    fn read_ident(&mut self) -> String {
-        let initial_position = self.position;
-        self.advance(1);
-        while matches!(self.peek(0), Some('a'..='z' | 'A'..='Z' | '_' | '0'..='9')) {
-            self.advance(1);
+    fn read_int(&mut self, position: usize) -> usize {
+        let mut last = position;
+        while self.peek().is_some_and(|(_, c)| c.is_ascii_digit()) {
+            let (l, c) = self.next().unwrap();
+            last = l;
         }
-        self.content[initial_position..self.position].to_string()
-    }
-
-    fn read_int(&mut self) -> isize {
-        let initial_position = self.position;
-        self.advance(1);
-        while matches!(self.peek(0), Some('0'..='9')) {
-            self.advance(1);
-        }
-        self.content[initial_position..self.position]
-            .to_string()
-            .parse::<isize>()
-            .unwrap()
+        let number = &self.content[position..last + 1];
+        number.len()
     }
 
     fn skip_whitespace(&mut self) {
-        while matches!(self.peek(0), Some(' ' | '\r' | '\t' | '\n')) {
-            self.advance(1);
+        while self.peek().is_some_and(|(_, c)| c.is_whitespace()) {
+            self.next();
         }
     }
 }
 
-impl Iterator for Lexer {
+impl<'src> Iterator for Lexer<'src> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -172,10 +184,10 @@ mod tests {
     use pretty_assertions::assert_eq;
     use tokens::{TokenKind, TokenKind::*};
 
-    fn expect_tok(lexer: &mut Lexer, expected: Vec<TokenKind>) {
+    fn expect_tok(lexer: &mut Lexer, input: &str, expected: Vec<(TokenKind, &str)>) {
         let token_kinds = lexer
             .into_iter()
-            .map(|t| t.kind.clone())
+            .map(|t| (t.kind, t.span.slice(input)))
             .collect::<Vec<_>>();
         assert_eq!(token_kinds, expected);
     }
@@ -203,75 +215,76 @@ calc(foo, bar)"#
         let mut lexer = Lexer::new(input);
         expect_tok(
             &mut lexer,
+            input,
             vec![
-                Identifier("foo".to_string()),
-                Colon,
-                Colon,
-                IntLiteral(4),
-                Semicolon,
-                Identifier("bar".to_string()),
-                Colon,
-                Identifier("Int".to_string()),
-                Equal,
-                IntLiteral(33),
-                Semicolon,
-                Unit,
-                Semicolon,
-                Identifier("calc".to_string()),
-                Colon,
-                Colon,
-                Fun,
-                LParen,
-                Tilde,
-                Identifier("x".to_string()),
-                Comma,
-                Tilde,
-                Identifier("y".to_string()),
-                Colon,
-                Identifier("Int".to_string()),
-                RParen,
-                Identifier("Int".to_string()),
-                LBrace,
-                Identifier("z".to_string()),
-                Colon,
-                Colon,
-                Identifier("x".to_string()),
-                Slash,
-                Identifier("y".to_string()),
-                Semicolon,
-                Identifier("f".to_string()),
-                Colon,
-                Colon,
-                Tilde,
-                LParen,
-                LParen,
-                Identifier("x".to_string()),
-                BitAnd,
-                Identifier("y".to_string()),
-                RParen,
-                BitOr,
-                LParen,
-                IntLiteral(3),
-                BitXor,
-                IntLiteral(2),
-                RParen,
-                RParen,
-                Semicolon,
-                True,
-                Semicolon,
-                False,
-                Semicolon,
-                Identifier("z".to_string()),
-                Asterisk,
-                Identifier("z".to_string()),
-                RBrace,
-                Semicolon,
-                Identifier("calc".to_string()),
-                LParen,
-                Identifier("foo".to_string()),
-                Comma,
-                Identifier("bar".to_string()),
-                RParen,
+                (Identifier, "foo"),
+                (Colon, ":"),
+                (Colon, ":"),
+                (IntLiteral, "4"),
+                (Semicolon, ";"),
+                (Identifier, "bar"),
+                (Colon, ":"),
+                (Identifier, "Int"),
+                (Equal, "="),
+                (IntLiteral, "33"),
+                (Semicolon, ";"),
+                (Unit, "unit"),
+                (Semicolon, ";"),
+                (Identifier, "calc"),
+                (Colon, ":"),
+                (Colon, ":"),
+                (Fun, "fun"),
+                (LParen, "("),
+                (Tilde, "~"),
+                (Identifier, "x"),
+                (Comma, ","),
+                (Tilde, "~"),
+                (Identifier, "y"),
+                (Colon, ":"),
+                (Identifier, "Int"),
+                (RParen, ")"),
+                (Identifier, "Int"),
+                (LBrace, "{"),
+                (Identifier, "z"),
+                (Colon, ":"),
+                (Colon, ":"),
+                (Identifier, "x"),
+                (Slash, "/"),
+                (Identifier, "y"),
+                (Semicolon, ";"),
+                (Identifier, "f"),
+                (Colon, ":"),
+                (Colon, ":"),
+                (Tilde, "~"),
+                (LParen, "("),
+                (LParen, "("),
+                (Identifier, "x"),
+                (BitAnd, "&"),
+                (Identifier, "y"),
+                (RParen, ")"),
+                (BitOr, "|"),
+                (LParen, "("),
+                (IntLiteral, "3"),
+                (BitXor, "^"),
+                (IntLiteral, "2"),
+                (RParen, ")"),
+                (RParen, ")"),
+                (Semicolon, ";"),
+                (True, "true"),
+                (Semicolon, ";"),
+                (False, "false"),
+                (Semicolon, ";"),
+                (Identifier, "z"),
+                (Asterisk, "*"),
+                (Identifier, "z"),
+                (RBrace, "}"),
+                (Semicolon, ";"),
+                (Identifier, "calc"),
+                (LParen, "("),
+                (Identifier, "foo"),
+                (Comma, ","),
+                (Identifier, "bar"),
+                (RParen, ")"),
             ],
         );
     }

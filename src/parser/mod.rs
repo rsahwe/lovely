@@ -7,7 +7,7 @@ use crate::{
         Lexer,
         tokens::TokenKind::{self, *},
     },
-    span::{Position, Span},
+    span::Span,
 };
 use ast::{
     Expression, ExpressionKind, ExpressionStatement, FunctionArgument, FunctionParameter,
@@ -40,13 +40,13 @@ impl Error {
     }
 }
 
-struct Parser {
+struct Parser<'src> {
     source: String,
-    lexer: Peekable<Lexer>,
+    lexer: Peekable<Lexer<'src>>,
 }
 
-impl Parser {
-    pub fn new(source: &str) -> Self {
+impl<'src> Parser<'src> {
+    pub fn new(source: &'src str) -> Self {
         let lexer = Lexer::new(source).peekable();
         Self {
             source: source.to_string(),
@@ -80,7 +80,7 @@ impl Parser {
 
         while self.cur_precedence()? > precedence {
             match &self.peek_kind() {
-                IntLiteral(_) => return Err(Error::syntax_err("consecutive ints")),
+                IntLiteral => return Err(Error::syntax_err("consecutive ints")),
                 Eof => return Ok(expr),
                 Plus => {
                     expr =
@@ -114,25 +114,25 @@ impl Parser {
     fn prefix_parse_fn(&mut self) -> Result<PrefixParseFn, Error> {
         let peek_token_kind = self.peek_kind();
         match peek_token_kind {
-            IntLiteral(_) => Ok(Box::new(Self::parse_int_literal)),
-            True | False => Ok(Box::new(Self::parse_bool_literal)),
-            Unit => Ok(Box::new(Self::parse_unit)),
-            LParen => Ok(Box::new(Self::parse_grouped_expression)),
-            Identifier(_) => {
+            IntLiteral => Ok(Box::new(|parser| parser.parse_int_literal())),
+            True | False => Ok(Box::new(|parser| parser.parse_bool_literal())),
+            Unit => Ok(Box::new(|parser| parser.parse_unit())),
+            LParen => Ok(Box::new(|parser| parser.parse_grouped_expression())),
+            Identifier => {
                 let (name, span) = self.expect_ident()?;
                 match self.peek_kind() {
                     Colon => Ok(Box::new(move |parser| {
-                        Parser::parse_variable_declaration(parser, &name, span.start)
+                        parser.parse_variable_declaration(&name, span.start)
                     })),
                     LParen => Ok(Box::new(move |parser| {
-                        Self::parse_function_call(parser, &name, span.start)
+                        parser.parse_function_call(&name, span.start)
                     })),
                     _ => Ok(Box::new(move |parser| {
-                        Self::parse_variable_ident(parser, &name, span)
+                        parser.parse_variable_ident(&name, span)
                     })),
                 }
             }
-            Fun => Ok(Box::new(Self::parse_function_expression)),
+            Fun => Ok(Box::new(|parser| parser.parse_function_expression())),
             _ => Err(Error::NoPrefixParseFn(peek_token_kind.clone())),
         }
     }
@@ -211,7 +211,7 @@ impl Parser {
     fn parse_function_call(
         &mut self,
         fn_name: &str,
-        start_position: Position,
+        start_position: usize,
     ) -> Result<Expression, Error> {
         self.expect_token(LParen)?;
 
@@ -244,7 +244,7 @@ impl Parser {
 
         let tok = self.lexer.peek().ok_or(Error::UnexpectedEof)?;
         let span = tok.span;
-        if let Identifier(_) = tok.kind {
+        if let Identifier = tok.kind {
             let (name, _) = self.expect_ident()?;
             if self.peek_kind() == &Colon {
                 self.expect_token(Colon)?;
@@ -263,12 +263,12 @@ impl Parser {
     fn parse_variable_declaration(
         &mut self,
         name: &str,
-        start_position: Position,
+        start_position: usize,
     ) -> Result<Expression, Error> {
         self.expect_token(Colon)?;
 
         let mut ty = None;
-        if let Identifier(_) = self.peek_kind() {
+        if let Identifier = self.peek_kind() {
             ty = Some(self.parse_type()?);
         }
 
@@ -322,7 +322,7 @@ impl Parser {
 
         let mut return_type = None;
 
-        if let Identifier(_) = self.peek_kind() {
+        if let Identifier = self.peek_kind() {
             return_type = Some(self.parse_type()?);
         }
 
@@ -355,10 +355,10 @@ impl Parser {
                 let ty = self.parse_type()?;
                 Ok(FunctionParameter::UnlabeledAtCallsite { name, ty })
             }
-            Identifier(_) => {
+            Identifier => {
                 let (first, _) = self.expect_ident()?;
                 let mut second = None;
-                if let Identifier(_) = self.peek_kind() {
+                if let Identifier = self.peek_kind() {
                     let (name, _) = self.expect_ident()?;
                     second = Some(name);
                 }
@@ -397,9 +397,9 @@ impl Parser {
     fn expect_int(&mut self) -> Result<(isize, Span), Error> {
         let token = self.lexer.peek().ok_or(Error::UnexpectedEof)?;
         let span = token.span;
-        if let IntLiteral(int) = token.kind {
+        if let IntLiteral = token.kind {
             self.lexer.next();
-            Ok((int, span))
+            Ok((span.slice(&self.source).parse().unwrap(), span))
         } else {
             Err(Error::expected("int literal", &token.kind.to_string()))
         }
@@ -409,9 +409,10 @@ impl Parser {
         let token = self.lexer.peek().ok_or(Error::UnexpectedEof)?;
         let kind = token.kind.clone();
         let span = token.span;
-        if let Identifier(str) = kind {
+        if let Identifier = kind {
             self.lexer.next();
-            Ok((str, span))
+            // up to you whether you want to return a `String` or a `&str`
+            Ok((span.slice(&self.source).to_owned(), span))
         } else {
             Err(Error::expected("identifier", &kind.to_string()))
         }
@@ -447,7 +448,7 @@ mod tests {
                 FunctionParameter, InfixOperator, Program, Type,
             },
         },
-        span::{Position, Span},
+        span::Span,
     };
     use pretty_assertions::assert_eq;
 
@@ -462,10 +463,7 @@ mod tests {
         expect_ast(
             "122",
             Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::IntLiteral(122),
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 3)),
-                ),
+                expr: Expression::new(ExpressionKind::IntLiteral(122), Span::from_range(0, 3)),
                 discarded: false,
             }]),
         );
@@ -473,10 +471,7 @@ mod tests {
         expect_ast(
             "122;",
             Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::IntLiteral(122),
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 3)),
-                ),
+                expr: Expression::new(ExpressionKind::IntLiteral(122), Span::from_range(0, 3)),
                 discarded: true,
             }]),
         );
@@ -486,7 +481,7 @@ mod tests {
             Program(vec![ExpressionStatement {
                 expr: Expression::new(
                     ExpressionKind::Ident("foo".to_string()),
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 3)),
+                    Span::from_range(0, 3),
                 ),
                 discarded: true,
             }]),
@@ -495,10 +490,7 @@ mod tests {
         expect_ast(
             "unit",
             Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Unit,
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 4)),
-                ),
+                expr: Expression::new(ExpressionKind::Unit, Span::from_range(0, 4)),
                 discarded: false,
             }]),
         );
@@ -509,14 +501,14 @@ mod tests {
                 ExpressionStatement {
                     expr: Expression::new(
                         ExpressionKind::BoolLiteral(true),
-                        Span::from_range(Position::line_col(1, 1), Position::line_col(1, 4)),
+                        Span::from_range(0, 4),
                     ),
                     discarded: true,
                 },
                 ExpressionStatement {
                     expr: Expression::new(
                         ExpressionKind::BoolLiteral(false),
-                        Span::from_range(Position::line_col(1, 7), Position::line_col(1, 11)),
+                        Span::from_range(6, 11),
                     ),
                     discarded: false,
                 },
@@ -533,31 +525,25 @@ mod tests {
                     ExpressionKind::Infix {
                         left: Box::new(Expression::new(
                             ExpressionKind::IntLiteral(1),
-                            Span::from_range(Position::line_col(1, 1), Position::line_col(1, 1)),
+                            Span::from_range(0, 1),
                         )),
                         operator: InfixOperator::Plus,
                         right: Box::new(Expression::new(
                             ExpressionKind::Infix {
                                 left: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(2),
-                                    Span::from_range(
-                                        Position::line_col(1, 5),
-                                        Position::line_col(1, 5),
-                                    ),
+                                    Span::from_range(4, 5),
                                 )),
                                 operator: InfixOperator::Multiply,
                                 right: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(3),
-                                    Span::from_range(
-                                        Position::line_col(1, 9),
-                                        Position::line_col(1, 9),
-                                    ),
+                                    Span::from_range(8, 9),
                                 )),
                             },
-                            Span::from_range(Position::line_col(1, 5), Position::line_col(1, 9)),
+                            Span::from_range(4, 9),
                         )),
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 9)),
+                    Span::from_range(0, 9),
                 ),
                 discarded: false,
             }]),
@@ -572,29 +558,23 @@ mod tests {
                             ExpressionKind::Infix {
                                 left: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(6),
-                                    Span::from_range(
-                                        Position::line_col(1, 1),
-                                        Position::line_col(1, 1),
-                                    ),
+                                    Span::from_range(0, 1),
                                 )),
                                 operator: InfixOperator::Minus,
                                 right: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(3),
-                                    Span::from_range(
-                                        Position::line_col(1, 5),
-                                        Position::line_col(1, 5),
-                                    ),
+                                    Span::from_range(4, 5),
                                 )),
                             },
-                            Span::from_range(Position::line_col(1, 1), Position::line_col(1, 5)),
+                            Span::from_range(0, 5),
                         )),
                         operator: InfixOperator::Minus,
                         right: Box::new(Expression::new(
                             ExpressionKind::IntLiteral(2),
-                            Span::from_range(Position::line_col(1, 9), Position::line_col(1, 9)),
+                            Span::from_range(8, 9),
                         )),
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 9)),
+                    Span::from_range(0, 9),
                 ),
                 discarded: false,
             }]),
@@ -609,61 +589,43 @@ mod tests {
                             ExpressionKind::Infix {
                                 left: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(1),
-                                    Span::from_range(
-                                        Position::line_col(1, 2),
-                                        Position::line_col(1, 2),
-                                    ),
+                                    Span::from_range(1, 2),
                                 )),
                                 operator: InfixOperator::Minus,
                                 right: Box::new(Expression::new(
                                     ExpressionKind::Infix {
                                         left: Box::new(Expression::new(
                                             ExpressionKind::IntLiteral(3),
-                                            Span::from_range(
-                                                Position::line_col(1, 7),
-                                                Position::line_col(1, 7),
-                                            ),
+                                            Span::from_range(6, 7),
                                         )),
                                         operator: InfixOperator::Plus,
                                         right: Box::new(Expression::new(
                                             ExpressionKind::IntLiteral(2),
-                                            Span::from_range(
-                                                Position::line_col(1, 11),
-                                                Position::line_col(1, 11),
-                                            ),
+                                            Span::from_range(10, 11),
                                         )),
                                     },
-                                    Span::from_range(
-                                        Position::line_col(1, 6),
-                                        Position::line_col(1, 12),
-                                    ),
+                                    Span::from_range(5, 12),
                                 )),
                             },
-                            Span::from_range(Position::line_col(1, 1), Position::line_col(1, 13)),
+                            Span::from_range(0, 13),
                         )),
                         operator: InfixOperator::Multiply,
                         right: Box::new(Expression::new(
                             ExpressionKind::Infix {
                                 left: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(122),
-                                    Span::from_range(
-                                        Position::line_col(1, 18),
-                                        Position::line_col(1, 20),
-                                    ),
+                                    Span::from_range(17, 20),
                                 )),
                                 operator: InfixOperator::Minus,
                                 right: Box::new(Expression::new(
                                     ExpressionKind::IntLiteral(9),
-                                    Span::from_range(
-                                        Position::line_col(1, 24),
-                                        Position::line_col(1, 30),
-                                    ),
+                                    Span::from_range(23, 30),
                                 )),
                             },
-                            Span::from_range(Position::line_col(1, 17), Position::line_col(1, 31)),
+                            Span::from_range(16, 31),
                         )),
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 31)),
+                    Span::from_range(0, 31),
                 ),
                 discarded: true,
             }]),
@@ -680,12 +642,12 @@ mod tests {
                         name: "foo".to_string(),
                         value: Box::new(Expression::new(
                             ExpressionKind::IntLiteral(4321),
-                            Span::from_range(Position::line_col(1, 8), Position::line_col(1, 11)),
+                            Span::from_range(7, 11),
                         )),
                         mutable: false,
                         ty: None,
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 11)),
+                    Span::from_range(0, 11),
                 ),
                 discarded: false,
             }]),
@@ -699,12 +661,12 @@ mod tests {
                         name: "bar".to_string(),
                         value: Box::new(Expression::new(
                             ExpressionKind::IntLiteral(4321),
-                            Span::from_range(Position::line_col(1, 8), Position::line_col(1, 11)),
+                            Span::from_range(7, 11),
                         )),
                         mutable: true,
                         ty: None,
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 11)),
+                    Span::from_range(0, 11),
                 ),
                 discarded: true,
             }]),
@@ -718,12 +680,12 @@ mod tests {
                         name: "typed_const".to_string(),
                         value: Box::new(Expression::new(
                             ExpressionKind::IntLiteral(4321),
-                            Span::from_range(Position::line_col(1, 21), Position::line_col(1, 24)),
+                            Span::from_range(20, 24),
                         )),
                         mutable: false,
                         ty: Some(Type::Ident("Int".to_string())),
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 24)),
+                    Span::from_range(0, 24),
                 ),
                 discarded: false,
             }]),
@@ -737,12 +699,12 @@ mod tests {
                         name: "typed_mut".to_string(),
                         value: Box::new(Expression::new(
                             ExpressionKind::IntLiteral(4321),
-                            Span::from_range(Position::line_col(1, 19), Position::line_col(1, 22)),
+                            Span::from_range(18, 22),
                         )),
                         mutable: true,
                         ty: Some(Type::Ident("Int".to_string())),
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 22)),
+                    Span::from_range(0, 22),
                 ),
                 discarded: true,
             }]),
@@ -760,15 +722,12 @@ mod tests {
                             name: "foo".to_string(),
                             value: Box::new(Expression::new(
                                 ExpressionKind::IntLiteral(3),
-                                Span::from_range(
-                                    Position::line_col(1, 8),
-                                    Position::line_col(1, 8),
-                                ),
+                                Span::from_range(7, 8),
                             )),
                             mutable: false,
                             ty: None,
                         },
-                        Span::from_range(Position::line_col(1, 1), Position::line_col(1, 8)),
+                        Span::from_range(0, 8),
                     ),
                     discarded: true,
                 },
@@ -777,21 +736,15 @@ mod tests {
                         ExpressionKind::Infix {
                             left: Box::new(Expression::new(
                                 ExpressionKind::Ident("foo".to_string()),
-                                Span::from_range(
-                                    Position::line_col(1, 11),
-                                    Position::line_col(1, 13),
-                                ),
+                                Span::from_range(10, 13),
                             )),
                             operator: InfixOperator::Minus,
                             right: Box::new(Expression::new(
                                 ExpressionKind::IntLiteral(4),
-                                Span::from_range(
-                                    Position::line_col(1, 17),
-                                    Position::line_col(1, 17),
-                                ),
+                                Span::from_range(16, 17),
                             )),
                         },
-                        Span::from_range(Position::line_col(1, 11), Position::line_col(1, 17)),
+                        Span::from_range(10, 17),
                     ),
                     discarded: false,
                 },
@@ -809,17 +762,11 @@ mod tests {
                         parameters: vec![],
                         return_type: None,
                         body: vec![ExpressionStatement {
-                            expr: Expression::new(
-                                ExpressionKind::Unit,
-                                Span::from_range(
-                                    Position::line_col(1, 10),
-                                    Position::line_col(1, 13),
-                                ),
-                            ),
+                            expr: Expression::new(ExpressionKind::Unit, Span::from_range(9, 13)),
                             discarded: false,
                         }],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 15)),
+                    Span::from_range(0, 15),
                 ),
                 discarded: false,
             }]),
@@ -835,15 +782,12 @@ mod tests {
                         body: vec![ExpressionStatement {
                             expr: Expression::new(
                                 ExpressionKind::IntLiteral(8),
-                                Span::from_range(
-                                    Position::line_col(1, 14),
-                                    Position::line_col(1, 14),
-                                ),
+                                Span::from_range(13, 14),
                             ),
                             discarded: false,
                         }],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 16)),
+                    Span::from_range(0, 16),
                 ),
                 discarded: false,
             }]),
@@ -863,34 +807,25 @@ mod tests {
                                         name: "x".to_string(),
                                         value: Box::new(Expression::new(
                                             ExpressionKind::IntLiteral(8),
-                                            Span::from_range(
-                                                Position::line_col(1, 19),
-                                                Position::line_col(1, 19),
-                                            ),
+                                            Span::from_range(18, 19),
                                         )),
                                         mutable: false,
                                         ty: None,
                                     },
-                                    Span::from_range(
-                                        Position::line_col(1, 14),
-                                        Position::line_col(1, 19),
-                                    ),
+                                    Span::from_range(13, 19),
                                 ),
                                 discarded: true,
                             },
                             ExpressionStatement {
                                 expr: Expression::new(
                                     ExpressionKind::Ident("x".to_string()),
-                                    Span::from_range(
-                                        Position::line_col(1, 22),
-                                        Position::line_col(1, 22),
-                                    ),
+                                    Span::from_range(21, 22),
                                 ),
                                 discarded: false,
                             },
                         ],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 24)),
+                    Span::from_range(0, 24),
                 ),
                 discarded: false,
             }]),
@@ -910,15 +845,12 @@ mod tests {
                         body: vec![ExpressionStatement {
                             expr: Expression::new(
                                 ExpressionKind::Ident("x".to_string()),
-                                Span::from_range(
-                                    Position::line_col(1, 20),
-                                    Position::line_col(1, 20),
-                                ),
+                                Span::from_range(19, 20),
                             ),
                             discarded: false,
                         }],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 22)),
+                    Span::from_range(0, 22),
                 ),
                 discarded: false,
             }]),
@@ -938,15 +870,12 @@ mod tests {
                         body: vec![ExpressionStatement {
                             expr: Expression::new(
                                 ExpressionKind::Ident("internal".to_string()),
-                                Span::from_range(
-                                    Position::line_col(1, 36),
-                                    Position::line_col(1, 43),
-                                ),
+                                Span::from_range(35, 43),
                             ),
                             discarded: false,
                         }],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 45)),
+                    Span::from_range(0, 45),
                 ),
                 discarded: false,
             }]),
@@ -965,15 +894,12 @@ mod tests {
                         body: vec![ExpressionStatement {
                             expr: Expression::new(
                                 ExpressionKind::Ident("x".to_string()),
-                                Span::from_range(
-                                    Position::line_col(1, 21),
-                                    Position::line_col(1, 21),
-                                ),
+                                Span::from_range(20, 21),
                             ),
                             discarded: false,
                         }],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 23)),
+                    Span::from_range(0, 23),
                 ),
                 discarded: false,
             }]),
@@ -992,14 +918,11 @@ mod tests {
                             label: None,
                             value: Expression::new(
                                 ExpressionKind::IntLiteral(3),
-                                Span::from_range(
-                                    Position::line_col(1, 7),
-                                    Position::line_col(1, 7),
-                                ),
+                                Span::from_range(6, 7),
                             ),
                         }],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 8)),
+                    Span::from_range(0, 8),
                 ),
                 discarded: false,
             }]),
@@ -1016,25 +939,19 @@ mod tests {
                                 label: None,
                                 value: Expression::new(
                                     ExpressionKind::IntLiteral(3),
-                                    Span::from_range(
-                                        Position::line_col(1, 7),
-                                        Position::line_col(1, 7),
-                                    ),
+                                    Span::from_range(6, 7),
                                 ),
                             },
                             FunctionArgument {
                                 label: None,
                                 value: Expression::new(
                                     ExpressionKind::IntLiteral(4),
-                                    Span::from_range(
-                                        Position::line_col(1, 10),
-                                        Position::line_col(1, 10),
-                                    ),
+                                    Span::from_range(9, 10),
                                 ),
                             },
                         ],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 11)),
+                    Span::from_range(0, 11),
                 ),
                 discarded: false,
             }]),
@@ -1051,25 +968,19 @@ mod tests {
                                 label: None,
                                 value: Expression::new(
                                     ExpressionKind::IntLiteral(3),
-                                    Span::from_range(
-                                        Position::line_col(1, 7),
-                                        Position::line_col(1, 7),
-                                    ),
+                                    Span::from_range(6, 7),
                                 ),
                             },
                             FunctionArgument {
                                 label: Some("and".to_string()),
                                 value: Expression::new(
                                     ExpressionKind::IntLiteral(4),
-                                    Span::from_range(
-                                        Position::line_col(1, 15),
-                                        Position::line_col(1, 15),
-                                    ),
+                                    Span::from_range(14, 15),
                                 ),
                             },
                         ],
                     },
-                    Span::from_range(Position::line_col(1, 1), Position::line_col(1, 16)),
+                    Span::from_range(0, 16),
                 ),
                 discarded: false,
             }]),
