@@ -71,44 +71,44 @@ add(3, to: 4);
 ```lovely
 # everything is an enum (lovel-enums)
 
-Expression :: {
-  @span: Span,
+type Expression {
+  @span : Span;
   
-  literal(Int),
-  variable(String),
-  call({
-   @name: String,
-   @args: List<Expression>,
+  Literal(Int),
+  Variable(String),
+  Call({
+    @name : String;
+    @args : List<Expression>;
   }),
 }
 
-Species :: {
-  dog,
-  cat,
-  fish,
-  other(String),
+type Species {
+  Dog,
+  Cat,
+  Fish,
+  Other(String),
 }
 
-Animal :: {
-  @size: Int,
-  @does_bite: Bool,
-  @can_bite: Bool,
-  @species: Species,
+type Animal {
+  @size      : Int;
+  @does_bite : Bool;
+  @can_bite  : Bool;
+  @species   : Species;
 };
 
 foo := Animal {
   size      = 4,
   does_bite = true,
   can_bite  = false,
-  species   = Species.other("hamster"),
+  species   = Species.Other("hamster"),
 };
 
 fry :: fun (~s: Species) {
-  print("Frying up a \(Species@to_string())")
-}
-fry(.fish)
+  print("Frying up a \(Species.@to_string())")
+};
+fry(.Fish);
 
-expr := Expression.call({
+expr := Expression.Call({
   name = "foo",
   args = [],
 }) {
