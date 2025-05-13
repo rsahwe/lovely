@@ -52,7 +52,7 @@ impl<'src> Lexer<'src> {
                 self.next();
                 if self
                     .chars
-                    .next_if(|(next_index, next_char)| *next_char == '=')
+                    .next_if(|(_, next_char)| *next_char == '=')
                     .is_some()
                 {
                     Token::new(DoubleEqual, cur_index, 2)
@@ -69,7 +69,7 @@ impl<'src> Lexer<'src> {
                 {
                     Token::new(NotEqual, cur_index, 2)
                 } else {
-                    Token::new(Not, cur_index, 1)
+                    Token::new(ExclamationMark, cur_index, 1)
                 }
             }
             '<' => {
@@ -151,7 +151,7 @@ impl<'src> Lexer<'src> {
     fn read_int(&mut self, position: usize) -> usize {
         let mut last = position;
         while self.peek().is_some_and(|(_, c)| c.is_ascii_digit()) {
-            let (l, c) = self.next().unwrap();
+            let (l, _) = self.next().unwrap();
             last = l;
         }
         let number = &self.content[position..last + 1];
@@ -165,7 +165,7 @@ impl<'src> Lexer<'src> {
     }
 }
 
-impl<'src> Iterator for Lexer<'src> {
+impl Iterator for Lexer<'_> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {

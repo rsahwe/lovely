@@ -22,7 +22,7 @@ pub enum TokenKind {
     Equal,     // =
 
     // operators:
-    Not,                // !
+    ExclamationMark,    // !
     Plus,               // +
     Minus,              // -
     Slash,              // /
@@ -61,7 +61,7 @@ impl Display for TokenKind {
             TokenKind::Tilde => "~",
             TokenKind::Semicolon => ";",
             TokenKind::Equal => "=",
-            TokenKind::Not => "!",
+            TokenKind::ExclamationMark => "!",
             TokenKind::Plus => "+",
             TokenKind::Minus => "-",
             TokenKind::Slash => "/",

@@ -11,7 +11,7 @@ use crate::{
 };
 use ast::{
     Expression, ExpressionKind, ExpressionStatement, FunctionArgument, FunctionParameter,
-    InfixOperator, Precedence, Program, Type,
+    InfixOperator, Precedence, PrefixOperator, Program, Type,
 };
 
 pub mod ast;
@@ -19,7 +19,7 @@ pub mod ast;
 type PrefixParseFn = Box<dyn Fn(&mut Parser) -> Result<Expression, Error>>;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-enum Error {
+pub enum Error {
     NoToken,
     NoPrefixParseFn(TokenKind),
     Expected { expected: String, got: String },
@@ -40,7 +40,7 @@ impl Error {
     }
 }
 
-struct Parser<'src> {
+pub struct Parser<'src> {
     source: String,
     lexer: Peekable<Lexer<'src>>,
 }
@@ -104,6 +104,34 @@ impl<'src> Parser<'src> {
                         Precedence::Product,
                     )?;
                 }
+                GreaterThan => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::GreaterThan,
+                        Precedence::Comparison,
+                    )?;
+                }
+                LessThan => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::LessThan,
+                        Precedence::Comparison,
+                    )?;
+                }
+                GreaterThanOrEqual => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::GreaterThanOrEqual,
+                        Precedence::Comparison,
+                    )?;
+                }
+                LessThanOrEqual => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::LessThanOrEqual,
+                        Precedence::Comparison,
+                    )?;
+                }
                 tok => return Err(Error::syntax_err(&format!("invalid operator: {tok}"))),
             }
         }
@@ -133,8 +161,30 @@ impl<'src> Parser<'src> {
                 }
             }
             Fun => Ok(Box::new(|parser| parser.parse_function_expression())),
+            ExclamationMark => Ok(Box::new(|parser| {
+                parser.parse_prefix_expression(PrefixOperator::LogicalNot)
+            })),
+            Minus => Ok(Box::new(|parser| {
+                parser.parse_prefix_expression(PrefixOperator::Negative)
+            })),
             _ => Err(Error::NoPrefixParseFn(peek_token_kind.clone())),
         }
+    }
+
+    fn parse_prefix_expression(&mut self, operator: PrefixOperator) -> Result<Expression, Error> {
+        let Span { start, .. } = self.expect_token(match operator {
+            PrefixOperator::LogicalNot => ExclamationMark,
+            PrefixOperator::Negative => Minus,
+        })?;
+        let expr = self.parse_expression(Precedence::Prefix)?;
+        let span = expr.span;
+        Ok(Expression::new(
+            ExpressionKind::Prefix {
+                operator,
+                expression: Box::new(expr),
+            },
+            Span::from_range(start, span.end),
+        ))
     }
 
     fn parse_infix_expression(
@@ -420,10 +470,9 @@ impl<'src> Parser<'src> {
 
     fn cur_precedence(&mut self) -> Result<Precedence, Error> {
         Ok(match self.peek_kind() {
-            Plus => Precedence::Sum,
-            Minus => Precedence::Sum,
-            Asterisk => Precedence::Product,
-            Slash => Precedence::Product,
+            LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual => Precedence::Comparison,
+            Plus | Minus => Precedence::Sum,
+            Asterisk | Slash => Precedence::Product,
             LParen => Precedence::Group,
             _ => Precedence::Lowest,
         })
@@ -451,6 +500,8 @@ mod tests {
         span::Span,
     };
     use pretty_assertions::assert_eq;
+
+    use super::ast::PrefixOperator;
 
     fn expect_ast(input: &str, ast: Program) {
         let mut parser = Parser::new(input);
@@ -513,6 +564,59 @@ mod tests {
                     discarded: false,
                 },
             ]),
+        );
+    }
+
+    #[test]
+    fn prefix_operators() {
+        expect_ast(
+            "!true",
+            Program(vec![ExpressionStatement {
+                expr: Expression::new(
+                    ExpressionKind::Prefix {
+                        operator: PrefixOperator::LogicalNot,
+                        expression: Box::new(Expression::new(
+                            ExpressionKind::BoolLiteral(true),
+                            Span::from_range(1, 5),
+                        )),
+                    },
+                    Span::from_range(0, 5),
+                ),
+                discarded: false,
+            }]),
+        );
+
+        expect_ast(
+            "-3 * -67",
+            Program(vec![ExpressionStatement {
+                expr: Expression::new(
+                    ExpressionKind::Infix {
+                        left: Box::new(Expression::new(
+                            ExpressionKind::Prefix {
+                                operator: PrefixOperator::Negative,
+                                expression: Box::new(Expression::new(
+                                    ExpressionKind::IntLiteral(3),
+                                    Span::from_range(1, 2),
+                                )),
+                            },
+                            Span::from_range(0, 2),
+                        )),
+                        operator: InfixOperator::Multiply,
+                        right: Box::new(Expression::new(
+                            ExpressionKind::Prefix {
+                                operator: PrefixOperator::Negative,
+                                expression: Box::new(Expression::new(
+                                    ExpressionKind::IntLiteral(67),
+                                    Span::from_range(6, 8),
+                                )),
+                            },
+                            Span::from_range(5, 8),
+                        )),
+                    },
+                    Span::from_range(0, 8),
+                ),
+                discarded: false,
+            }]),
         );
     }
 
@@ -626,6 +730,30 @@ mod tests {
                         )),
                     },
                     Span::from_range(0, 31),
+                ),
+                discarded: true,
+            }]),
+        );
+    }
+
+    #[test]
+    fn logical_expressions() {
+        expect_ast(
+            "4 > 3;",
+            Program(vec![ExpressionStatement {
+                expr: Expression::new(
+                    ExpressionKind::Infix {
+                        left: Box::new(Expression::new(
+                            ExpressionKind::IntLiteral(4),
+                            Span::from_range(0, 1),
+                        )),
+                        operator: InfixOperator::GreaterThan,
+                        right: Box::new(Expression::new(
+                            ExpressionKind::IntLiteral(3),
+                            Span::from_range(4, 5),
+                        )),
+                    },
+                    Span::from_range(0, 5),
                 ),
                 discarded: true,
             }]),

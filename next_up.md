@@ -1,1 +1,2 @@
-pipe out new nice spans through the ast/parser so that the checker can access them
+- typecheck `Equal` and `NotEqual` infix expressions
+- set up snapshot testing

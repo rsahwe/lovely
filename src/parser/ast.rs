@@ -22,11 +22,10 @@ impl Expression {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum ExpressionKind {
+    Unit,
     BoolLiteral(bool),
     IntLiteral(isize),
     Ident(String),
-
-    Unit,
 
     Prefix {
         operator: PrefixOperator,
@@ -57,19 +56,18 @@ pub enum ExpressionKind {
     },
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum PrefixOperator {
     LogicalNot,
     Negative,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum InfixOperator {
     Plus,
     Minus,
     Divide,
     Multiply,
-    Exponent,
     Equal,
     NotEqual,
     LessThan,
@@ -113,7 +111,9 @@ pub enum Type {
 #[derive(Ord, Eq, PartialEq, PartialOrd, Debug)]
 pub enum Precedence {
     Lowest,
+    Comparison,
     Sum,     // + or -
     Product, // * or /
     Group,   // ( )
+    Prefix,  // -X or !X
 }
