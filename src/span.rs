@@ -1,33 +1,15 @@
 #[derive(Clone, Debug, Eq, PartialEq, Copy)]
 pub struct Span {
-    pub start: Position,
-    pub end: Position,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Span {
-    pub fn from_range(start: Position, end: Position) -> Self {
+    pub fn from_range(start: usize, end: usize) -> Self {
         Self { start, end }
     }
-    pub fn from_text(text: &str, start: usize, end: usize) -> Self {
-        Self {
-            start: Position::from_char_index(text, start),
-            end: Position::from_char_index(text, end),
-        }
-    }
-}
 
-#[derive(Clone, Debug, Eq, PartialEq, Copy)]
-pub struct Position {
-    pub line: usize,
-    pub column: usize,
-}
-
-impl Position {
-    pub fn line_col(line: usize, column: usize) -> Self {
-        Self { line, column }
-    }
-
-    pub fn from_char_index(text: &str, index: usize) -> Self {
+    fn line_col(text: &str, index: usize) -> (usize, usize) {
         let bytes = text.chars();
 
         let mut line = 1;
@@ -48,7 +30,21 @@ impl Position {
             position += 1;
         }
 
-        Self { line, column }
+        (line, column)
+    }
+
+    pub fn line_col_start(&self, text: &str) -> (usize, usize) {
+        Span::line_col(text, self.start)
+    }
+
+    pub fn line_col_end(&self, text: &str) -> (usize, usize) {
+        Span::line_col(text, self.end)
+    }
+
+    pub fn slice<'src>(&self, source: &'src str) -> &'src str {
+        // SAFETY: `start` and `end` are UTF-8 char indices, not byte indexes
+        // for ascii, this should work fine though
+        &source[self.start..self.end]
     }
 }
 
@@ -58,10 +54,10 @@ mod tests {
 
     #[test]
     fn position_from_char_index() {
-        let pos = Position::from_char_index("hi there\nI am Tom", 12);
-        assert_eq!(pos, Position { line: 2, column: 3 });
+        let text = "hi there\nI am Tom";
+        assert_eq!(Span::line_col(text, 12), (2, 3));
 
-        let pos = Position::from_char_index("hi there\nI am Tom\nWho are you???", 25);
-        assert_eq!(pos, Position { line: 3, column: 7 });
+        let text = "hi there\nI am Tom\nWho are you???";
+        assert_eq!(Span::line_col(text, 25), (3, 7));
     }
 }
