@@ -489,629 +489,1028 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        parser::{
-            Parser,
-            ast::{
-                Expression, ExpressionKind, ExpressionStatement, FunctionArgument,
-                FunctionParameter, InfixOperator, Program, Type,
-            },
-        },
-        span::Span,
-    };
-    use pretty_assertions::assert_eq;
+    use crate::parser::Parser;
+    use insta::assert_debug_snapshot as snap;
 
-    use super::ast::PrefixOperator;
+    use super::ast::Program;
 
-    fn expect_ast(input: &str, ast: Program) {
-        let mut parser = Parser::new(input);
-        let parsed = parser.parse();
-        assert_eq!(parsed, Ok(ast));
+    fn ast(input: &str) -> Program {
+        Parser::new(input).parse().unwrap()
     }
 
     #[test]
     fn single_value() {
-        expect_ast(
-            "122",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(ExpressionKind::IntLiteral(122), Span::from_range(0, 3)),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "122;",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(ExpressionKind::IntLiteral(122), Span::from_range(0, 3)),
-                discarded: true,
-            }]),
-        );
-
-        expect_ast(
-            "foo;",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Ident("foo".to_string()),
-                    Span::from_range(0, 3),
-                ),
-                discarded: true,
-            }]),
-        );
-
-        expect_ast(
-            "unit",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(ExpressionKind::Unit, Span::from_range(0, 4)),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "true; false",
-            Program(vec![
+        snap!(ast("122"), @r"
+        Program(
+            [
                 ExpressionStatement {
-                    expr: Expression::new(
-                        ExpressionKind::BoolLiteral(true),
-                        Span::from_range(0, 4),
-                    ),
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 3,
+                        },
+                        kind: IntLiteral(
+                            122,
+                        ),
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        ");
+        snap!(ast("122;"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 3,
+                        },
+                        kind: IntLiteral(
+                            122,
+                        ),
+                    },
+                    discarded: true,
+                },
+            ],
+        )
+        ");
+        snap!(ast("foo;"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 3,
+                        },
+                        kind: Ident(
+                            "foo",
+                        ),
+                    },
+                    discarded: true,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("unit"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 4,
+                        },
+                        kind: Unit,
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        ");
+        snap!(ast("true; false"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 4,
+                        },
+                        kind: BoolLiteral(
+                            true,
+                        ),
+                    },
                     discarded: true,
                 },
                 ExpressionStatement {
-                    expr: Expression::new(
-                        ExpressionKind::BoolLiteral(false),
-                        Span::from_range(6, 11),
-                    ),
+                    expr: Expression {
+                        span: Span {
+                            start: 6,
+                            end: 11,
+                        },
+                        kind: BoolLiteral(
+                            false,
+                        ),
+                    },
                     discarded: false,
                 },
-            ]),
-        );
+            ],
+        )
+        ");
     }
 
     #[test]
     fn prefix_operators() {
-        expect_ast(
-            "!true",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Prefix {
-                        operator: PrefixOperator::LogicalNot,
-                        expression: Box::new(Expression::new(
-                            ExpressionKind::BoolLiteral(true),
-                            Span::from_range(1, 5),
-                        )),
-                    },
-                    Span::from_range(0, 5),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "-3 * -67",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Infix {
-                        left: Box::new(Expression::new(
-                            ExpressionKind::Prefix {
-                                operator: PrefixOperator::Negative,
-                                expression: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(3),
-                                    Span::from_range(1, 2),
-                                )),
+        snap!(ast("!true"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 5,
+                        },
+                        kind: Prefix {
+                            operator: LogicalNot,
+                            expression: Expression {
+                                span: Span {
+                                    start: 1,
+                                    end: 5,
+                                },
+                                kind: BoolLiteral(
+                                    true,
+                                ),
                             },
-                            Span::from_range(0, 2),
-                        )),
-                        operator: InfixOperator::Multiply,
-                        right: Box::new(Expression::new(
-                            ExpressionKind::Prefix {
-                                operator: PrefixOperator::Negative,
-                                expression: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(67),
-                                    Span::from_range(6, 8),
-                                )),
-                            },
-                            Span::from_range(5, 8),
-                        )),
+                        },
                     },
-                    Span::from_range(0, 8),
-                ),
-                discarded: false,
-            }]),
-        );
+                    discarded: false,
+                },
+            ],
+        )
+        ");
+        snap!(ast("-3 * -67"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 8,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 0,
+                                    end: 2,
+                                },
+                                kind: Prefix {
+                                    operator: Negative,
+                                    expression: Expression {
+                                        span: Span {
+                                            start: 1,
+                                            end: 2,
+                                        },
+                                        kind: IntLiteral(
+                                            3,
+                                        ),
+                                    },
+                                },
+                            },
+                            operator: Multiply,
+                            right: Expression {
+                                span: Span {
+                                    start: 5,
+                                    end: 8,
+                                },
+                                kind: Prefix {
+                                    operator: Negative,
+                                    expression: Expression {
+                                        span: Span {
+                                            start: 6,
+                                            end: 8,
+                                        },
+                                        kind: IntLiteral(
+                                            67,
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        ");
     }
 
     #[test]
     fn mathematical_expressions() {
-        expect_ast(
-            "1 + 2 * 3",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Infix {
-                        left: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(1),
-                            Span::from_range(0, 1),
-                        )),
-                        operator: InfixOperator::Plus,
-                        right: Box::new(Expression::new(
-                            ExpressionKind::Infix {
-                                left: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(2),
-                                    Span::from_range(4, 5),
-                                )),
-                                operator: InfixOperator::Multiply,
-                                right: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(3),
-                                    Span::from_range(8, 9),
-                                )),
+        snap!(ast("1 + 2 * 3"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 9,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 0,
+                                    end: 1,
+                                },
+                                kind: IntLiteral(
+                                    1,
+                                ),
                             },
-                            Span::from_range(4, 9),
-                        )),
-                    },
-                    Span::from_range(0, 9),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "6 - 3 - 2",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Infix {
-                        left: Box::new(Expression::new(
-                            ExpressionKind::Infix {
-                                left: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(6),
-                                    Span::from_range(0, 1),
-                                )),
-                                operator: InfixOperator::Minus,
-                                right: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(3),
-                                    Span::from_range(4, 5),
-                                )),
-                            },
-                            Span::from_range(0, 5),
-                        )),
-                        operator: InfixOperator::Minus,
-                        right: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(2),
-                            Span::from_range(8, 9),
-                        )),
-                    },
-                    Span::from_range(0, 9),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "(1 - (3 + 2)) * (122 - (((9))));",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Infix {
-                        left: Box::new(Expression::new(
-                            ExpressionKind::Infix {
-                                left: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(1),
-                                    Span::from_range(1, 2),
-                                )),
-                                operator: InfixOperator::Minus,
-                                right: Box::new(Expression::new(
-                                    ExpressionKind::Infix {
-                                        left: Box::new(Expression::new(
-                                            ExpressionKind::IntLiteral(3),
-                                            Span::from_range(6, 7),
-                                        )),
-                                        operator: InfixOperator::Plus,
-                                        right: Box::new(Expression::new(
-                                            ExpressionKind::IntLiteral(2),
-                                            Span::from_range(10, 11),
-                                        )),
+                            operator: Plus,
+                            right: Expression {
+                                span: Span {
+                                    start: 4,
+                                    end: 9,
+                                },
+                                kind: Infix {
+                                    left: Expression {
+                                        span: Span {
+                                            start: 4,
+                                            end: 5,
+                                        },
+                                        kind: IntLiteral(
+                                            2,
+                                        ),
                                     },
-                                    Span::from_range(5, 12),
-                                )),
+                                    operator: Multiply,
+                                    right: Expression {
+                                        span: Span {
+                                            start: 8,
+                                            end: 9,
+                                        },
+                                        kind: IntLiteral(
+                                            3,
+                                        ),
+                                    },
+                                },
                             },
-                            Span::from_range(0, 13),
-                        )),
-                        operator: InfixOperator::Multiply,
-                        right: Box::new(Expression::new(
-                            ExpressionKind::Infix {
-                                left: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(122),
-                                    Span::from_range(17, 20),
-                                )),
-                                operator: InfixOperator::Minus,
-                                right: Box::new(Expression::new(
-                                    ExpressionKind::IntLiteral(9),
-                                    Span::from_range(23, 30),
-                                )),
-                            },
-                            Span::from_range(16, 31),
-                        )),
+                        },
                     },
-                    Span::from_range(0, 31),
-                ),
-                discarded: true,
-            }]),
-        );
+                    discarded: false,
+                },
+            ],
+        )
+        ");
+        snap!(ast("6 - 3 - 2"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 9,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 0,
+                                    end: 5,
+                                },
+                                kind: Infix {
+                                    left: Expression {
+                                        span: Span {
+                                            start: 0,
+                                            end: 1,
+                                        },
+                                        kind: IntLiteral(
+                                            6,
+                                        ),
+                                    },
+                                    operator: Minus,
+                                    right: Expression {
+                                        span: Span {
+                                            start: 4,
+                                            end: 5,
+                                        },
+                                        kind: IntLiteral(
+                                            3,
+                                        ),
+                                    },
+                                },
+                            },
+                            operator: Minus,
+                            right: Expression {
+                                span: Span {
+                                    start: 8,
+                                    end: 9,
+                                },
+                                kind: IntLiteral(
+                                    2,
+                                ),
+                            },
+                        },
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        ");
+        snap!(ast("(1 - (3 + 2)) * (122 - (((9))));"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 31,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 0,
+                                    end: 13,
+                                },
+                                kind: Infix {
+                                    left: Expression {
+                                        span: Span {
+                                            start: 1,
+                                            end: 2,
+                                        },
+                                        kind: IntLiteral(
+                                            1,
+                                        ),
+                                    },
+                                    operator: Minus,
+                                    right: Expression {
+                                        span: Span {
+                                            start: 5,
+                                            end: 12,
+                                        },
+                                        kind: Infix {
+                                            left: Expression {
+                                                span: Span {
+                                                    start: 6,
+                                                    end: 7,
+                                                },
+                                                kind: IntLiteral(
+                                                    3,
+                                                ),
+                                            },
+                                            operator: Plus,
+                                            right: Expression {
+                                                span: Span {
+                                                    start: 10,
+                                                    end: 11,
+                                                },
+                                                kind: IntLiteral(
+                                                    2,
+                                                ),
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                            operator: Multiply,
+                            right: Expression {
+                                span: Span {
+                                    start: 16,
+                                    end: 31,
+                                },
+                                kind: Infix {
+                                    left: Expression {
+                                        span: Span {
+                                            start: 17,
+                                            end: 20,
+                                        },
+                                        kind: IntLiteral(
+                                            122,
+                                        ),
+                                    },
+                                    operator: Minus,
+                                    right: Expression {
+                                        span: Span {
+                                            start: 23,
+                                            end: 30,
+                                        },
+                                        kind: IntLiteral(
+                                            9,
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    discarded: true,
+                },
+            ],
+        )
+        ");
     }
 
     #[test]
     fn logical_expressions() {
-        expect_ast(
-            "4 > 3;",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Infix {
-                        left: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(4),
-                            Span::from_range(0, 1),
-                        )),
-                        operator: InfixOperator::GreaterThan,
-                        right: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(3),
-                            Span::from_range(4, 5),
-                        )),
+        snap!(ast("4 > 3;"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 5,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 0,
+                                    end: 1,
+                                },
+                                kind: IntLiteral(
+                                    4,
+                                ),
+                            },
+                            operator: GreaterThan,
+                            right: Expression {
+                                span: Span {
+                                    start: 4,
+                                    end: 5,
+                                },
+                                kind: IntLiteral(
+                                    3,
+                                ),
+                            },
+                        },
                     },
-                    Span::from_range(0, 5),
-                ),
-                discarded: true,
-            }]),
-        );
+                    discarded: true,
+                },
+            ],
+        )
+        ");
     }
 
     #[test]
     fn variable_decls() {
-        expect_ast(
-            "foo :: 4321",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::VariableDecl {
-                        name: "foo".to_string(),
-                        value: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(4321),
-                            Span::from_range(7, 11),
-                        )),
-                        mutable: false,
-                        ty: None,
+        snap!(ast("foo :: 4321"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 11,
+                        },
+                        kind: VariableDecl {
+                            name: "foo",
+                            value: Expression {
+                                span: Span {
+                                    start: 7,
+                                    end: 11,
+                                },
+                                kind: IntLiteral(
+                                    4321,
+                                ),
+                            },
+                            mutable: false,
+                            ty: None,
+                        },
                     },
-                    Span::from_range(0, 11),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "bar := 4321;",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::VariableDecl {
-                        name: "bar".to_string(),
-                        value: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(4321),
-                            Span::from_range(7, 11),
-                        )),
-                        mutable: true,
-                        ty: None,
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("bar := 4321;"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 11,
+                        },
+                        kind: VariableDecl {
+                            name: "bar",
+                            value: Expression {
+                                span: Span {
+                                    start: 7,
+                                    end: 11,
+                                },
+                                kind: IntLiteral(
+                                    4321,
+                                ),
+                            },
+                            mutable: true,
+                            ty: None,
+                        },
                     },
-                    Span::from_range(0, 11),
-                ),
-                discarded: true,
-            }]),
-        );
-
-        expect_ast(
-            "typed_const : Int : 4321",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::VariableDecl {
-                        name: "typed_const".to_string(),
-                        value: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(4321),
-                            Span::from_range(20, 24),
-                        )),
-                        mutable: false,
-                        ty: Some(Type::Ident("Int".to_string())),
+                    discarded: true,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("typed_const : Int : 4321"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 24,
+                        },
+                        kind: VariableDecl {
+                            name: "typed_const",
+                            value: Expression {
+                                span: Span {
+                                    start: 20,
+                                    end: 24,
+                                },
+                                kind: IntLiteral(
+                                    4321,
+                                ),
+                            },
+                            mutable: false,
+                            ty: Some(
+                                Ident(
+                                    "Int",
+                                ),
+                            ),
+                        },
                     },
-                    Span::from_range(0, 24),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "typed_mut : Int = 4321;",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::VariableDecl {
-                        name: "typed_mut".to_string(),
-                        value: Box::new(Expression::new(
-                            ExpressionKind::IntLiteral(4321),
-                            Span::from_range(18, 22),
-                        )),
-                        mutable: true,
-                        ty: Some(Type::Ident("Int".to_string())),
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("typed_mut : Int = 4321;"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 22,
+                        },
+                        kind: VariableDecl {
+                            name: "typed_mut",
+                            value: Expression {
+                                span: Span {
+                                    start: 18,
+                                    end: 22,
+                                },
+                                kind: IntLiteral(
+                                    4321,
+                                ),
+                            },
+                            mutable: true,
+                            ty: Some(
+                                Ident(
+                                    "Int",
+                                ),
+                            ),
+                        },
                     },
-                    Span::from_range(0, 22),
-                ),
-                discarded: true,
-            }]),
-        );
+                    discarded: true,
+                },
+            ],
+        )
+        "#);
     }
 
     #[test]
     fn multiple_expression_satements() {
-        expect_ast(
-            "foo :: 3; foo - 4",
-            Program(vec![
+        snap!(ast("foo :: 3; foo - 4"), @r#"
+        Program(
+            [
                 ExpressionStatement {
-                    expr: Expression::new(
-                        ExpressionKind::VariableDecl {
-                            name: "foo".to_string(),
-                            value: Box::new(Expression::new(
-                                ExpressionKind::IntLiteral(3),
-                                Span::from_range(7, 8),
-                            )),
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 8,
+                        },
+                        kind: VariableDecl {
+                            name: "foo",
+                            value: Expression {
+                                span: Span {
+                                    start: 7,
+                                    end: 8,
+                                },
+                                kind: IntLiteral(
+                                    3,
+                                ),
+                            },
                             mutable: false,
                             ty: None,
                         },
-                        Span::from_range(0, 8),
-                    ),
+                    },
                     discarded: true,
                 },
                 ExpressionStatement {
-                    expr: Expression::new(
-                        ExpressionKind::Infix {
-                            left: Box::new(Expression::new(
-                                ExpressionKind::Ident("foo".to_string()),
-                                Span::from_range(10, 13),
-                            )),
-                            operator: InfixOperator::Minus,
-                            right: Box::new(Expression::new(
-                                ExpressionKind::IntLiteral(4),
-                                Span::from_range(16, 17),
-                            )),
+                    expr: Expression {
+                        span: Span {
+                            start: 10,
+                            end: 17,
                         },
-                        Span::from_range(10, 17),
-                    ),
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 10,
+                                    end: 13,
+                                },
+                                kind: Ident(
+                                    "foo",
+                                ),
+                            },
+                            operator: Minus,
+                            right: Expression {
+                                span: Span {
+                                    start: 16,
+                                    end: 17,
+                                },
+                                kind: IntLiteral(
+                                    4,
+                                ),
+                            },
+                        },
+                    },
                     discarded: false,
                 },
-            ]),
-        );
+            ],
+        )
+        "#);
     }
 
     #[test]
     fn function_expressions() {
-        expect_ast(
-            "fun () { unit }",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Function {
-                        parameters: vec![],
-                        return_type: None,
-                        body: vec![ExpressionStatement {
-                            expr: Expression::new(ExpressionKind::Unit, Span::from_range(9, 13)),
-                            discarded: false,
-                        }],
-                    },
-                    Span::from_range(0, 15),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "fun () Int { 8 }",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Function {
-                        parameters: vec![],
-                        return_type: Some(Type::Ident("Int".to_string())),
-                        body: vec![ExpressionStatement {
-                            expr: Expression::new(
-                                ExpressionKind::IntLiteral(8),
-                                Span::from_range(13, 14),
-                            ),
-                            discarded: false,
-                        }],
-                    },
-                    Span::from_range(0, 16),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "fun () Int { x :: 8; x }",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Function {
-                        parameters: vec![],
-                        return_type: Some(Type::Ident("Int".to_string())),
-                        body: vec![
-                            ExpressionStatement {
-                                expr: Expression::new(
-                                    ExpressionKind::VariableDecl {
-                                        name: "x".to_string(),
-                                        value: Box::new(Expression::new(
-                                            ExpressionKind::IntLiteral(8),
-                                            Span::from_range(18, 19),
-                                        )),
-                                        mutable: false,
-                                        ty: None,
+        snap!(ast("fun () { unit }"), @r"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 15,
+                        },
+                        kind: Function {
+                            parameters: [],
+                            return_type: None,
+                            body: [
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 9,
+                                            end: 13,
+                                        },
+                                        kind: Unit,
                                     },
-                                    Span::from_range(13, 19),
+                                    discarded: false,
+                                },
+                            ],
+                        },
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        ");
+        snap!(ast("fun () Int { 8 }"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 16,
+                        },
+                        kind: Function {
+                            parameters: [],
+                            return_type: Some(
+                                Ident(
+                                    "Int",
                                 ),
-                                discarded: true,
-                            },
-                            ExpressionStatement {
-                                expr: Expression::new(
-                                    ExpressionKind::Ident("x".to_string()),
-                                    Span::from_range(21, 22),
+                            ),
+                            body: [
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 13,
+                                            end: 14,
+                                        },
+                                        kind: IntLiteral(
+                                            8,
+                                        ),
+                                    },
+                                    discarded: false,
+                                },
+                            ],
+                        },
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("fun () Int { x :: 8; x }"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 24,
+                        },
+                        kind: Function {
+                            parameters: [],
+                            return_type: Some(
+                                Ident(
+                                    "Int",
                                 ),
-                                discarded: false,
-                            },
-                        ],
-                    },
-                    Span::from_range(0, 24),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "fun (x: Int) Int { x }",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Function {
-                        parameters: vec![FunctionParameter::LabeledAtCallsite {
-                            internal_name: "x".to_string(),
-                            external_name: None,
-                            ty: Type::Ident("Int".to_string()),
-                        }],
-                        return_type: Some(Type::Ident("Int".to_string())),
-                        body: vec![ExpressionStatement {
-                            expr: Expression::new(
-                                ExpressionKind::Ident("x".to_string()),
-                                Span::from_range(19, 20),
                             ),
-                            discarded: false,
-                        }],
+                            body: [
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 13,
+                                            end: 19,
+                                        },
+                                        kind: VariableDecl {
+                                            name: "x",
+                                            value: Expression {
+                                                span: Span {
+                                                    start: 18,
+                                                    end: 19,
+                                                },
+                                                kind: IntLiteral(
+                                                    8,
+                                                ),
+                                            },
+                                            mutable: false,
+                                            ty: None,
+                                        },
+                                    },
+                                    discarded: true,
+                                },
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 21,
+                                            end: 22,
+                                        },
+                                        kind: Ident(
+                                            "x",
+                                        ),
+                                    },
+                                    discarded: false,
+                                },
+                            ],
+                        },
                     },
-                    Span::from_range(0, 22),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "fun (external internal: Int) Int { internal }",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Function {
-                        parameters: vec![FunctionParameter::LabeledAtCallsite {
-                            internal_name: "internal".to_string(),
-                            external_name: Some("external".to_string()),
-                            ty: Type::Ident("Int".to_string()),
-                        }],
-                        return_type: Some(Type::Ident("Int".to_string())),
-                        body: vec![ExpressionStatement {
-                            expr: Expression::new(
-                                ExpressionKind::Ident("internal".to_string()),
-                                Span::from_range(35, 43),
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("fun (x: Int) Int { x }"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 22,
+                        },
+                        kind: Function {
+                            parameters: [
+                                LabeledAtCallsite {
+                                    internal_name: "x",
+                                    external_name: None,
+                                    ty: Ident(
+                                        "Int",
+                                    ),
+                                },
+                            ],
+                            return_type: Some(
+                                Ident(
+                                    "Int",
+                                ),
                             ),
-                            discarded: false,
-                        }],
+                            body: [
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 19,
+                                            end: 20,
+                                        },
+                                        kind: Ident(
+                                            "x",
+                                        ),
+                                    },
+                                    discarded: false,
+                                },
+                            ],
+                        },
                     },
-                    Span::from_range(0, 45),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "fun (~x: Int) Int { x }",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::Function {
-                        parameters: vec![FunctionParameter::UnlabeledAtCallsite {
-                            name: "x".to_string(),
-                            ty: Type::Ident("Int".to_string()),
-                        }],
-                        return_type: Some(Type::Ident("Int".to_string())),
-                        body: vec![ExpressionStatement {
-                            expr: Expression::new(
-                                ExpressionKind::Ident("x".to_string()),
-                                Span::from_range(20, 21),
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("fun (external internal: Int) Int { internal }"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 45,
+                        },
+                        kind: Function {
+                            parameters: [
+                                LabeledAtCallsite {
+                                    internal_name: "internal",
+                                    external_name: Some(
+                                        "external",
+                                    ),
+                                    ty: Ident(
+                                        "Int",
+                                    ),
+                                },
+                            ],
+                            return_type: Some(
+                                Ident(
+                                    "Int",
+                                ),
                             ),
-                            discarded: false,
-                        }],
+                            body: [
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 35,
+                                            end: 43,
+                                        },
+                                        kind: Ident(
+                                            "internal",
+                                        ),
+                                    },
+                                    discarded: false,
+                                },
+                            ],
+                        },
                     },
-                    Span::from_range(0, 23),
-                ),
-                discarded: false,
-            }]),
-        );
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("fun (~x: Int) Int { x }"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 23,
+                        },
+                        kind: Function {
+                            parameters: [
+                                UnlabeledAtCallsite {
+                                    name: "x",
+                                    ty: Ident(
+                                        "Int",
+                                    ),
+                                },
+                            ],
+                            return_type: Some(
+                                Ident(
+                                    "Int",
+                                ),
+                            ),
+                            body: [
+                                ExpressionStatement {
+                                    expr: Expression {
+                                        span: Span {
+                                            start: 20,
+                                            end: 21,
+                                        },
+                                        kind: Ident(
+                                            "x",
+                                        ),
+                                    },
+                                    discarded: false,
+                                },
+                            ],
+                        },
+                    },
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
     }
 
     #[test]
     fn function_calls() {
-        expect_ast(
-            "print(3)",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::FunctionCall {
-                        name: "print".to_string(),
-                        arguments: vec![FunctionArgument {
-                            label: None,
-                            value: Expression::new(
-                                ExpressionKind::IntLiteral(3),
-                                Span::from_range(6, 7),
-                            ),
-                        }],
+        snap!(ast("print(3)"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 8,
+                        },
+                        kind: FunctionCall {
+                            name: "print",
+                            arguments: [
+                                FunctionArgument {
+                                    label: None,
+                                    value: Expression {
+                                        span: Span {
+                                            start: 6,
+                                            end: 7,
+                                        },
+                                        kind: IntLiteral(
+                                            3,
+                                        ),
+                                    },
+                                },
+                            ],
+                        },
                     },
-                    Span::from_range(0, 8),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "print(3, 4)",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::FunctionCall {
-                        name: "print".to_string(),
-                        arguments: vec![
-                            FunctionArgument {
-                                label: None,
-                                value: Expression::new(
-                                    ExpressionKind::IntLiteral(3),
-                                    Span::from_range(6, 7),
-                                ),
-                            },
-                            FunctionArgument {
-                                label: None,
-                                value: Expression::new(
-                                    ExpressionKind::IntLiteral(4),
-                                    Span::from_range(9, 10),
-                                ),
-                            },
-                        ],
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("print(3, 4)"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 11,
+                        },
+                        kind: FunctionCall {
+                            name: "print",
+                            arguments: [
+                                FunctionArgument {
+                                    label: None,
+                                    value: Expression {
+                                        span: Span {
+                                            start: 6,
+                                            end: 7,
+                                        },
+                                        kind: IntLiteral(
+                                            3,
+                                        ),
+                                    },
+                                },
+                                FunctionArgument {
+                                    label: None,
+                                    value: Expression {
+                                        span: Span {
+                                            start: 9,
+                                            end: 10,
+                                        },
+                                        kind: IntLiteral(
+                                            4,
+                                        ),
+                                    },
+                                },
+                            ],
+                        },
                     },
-                    Span::from_range(0, 11),
-                ),
-                discarded: false,
-            }]),
-        );
-
-        expect_ast(
-            "print(3, and: 4)",
-            Program(vec![ExpressionStatement {
-                expr: Expression::new(
-                    ExpressionKind::FunctionCall {
-                        name: "print".to_string(),
-                        arguments: vec![
-                            FunctionArgument {
-                                label: None,
-                                value: Expression::new(
-                                    ExpressionKind::IntLiteral(3),
-                                    Span::from_range(6, 7),
-                                ),
-                            },
-                            FunctionArgument {
-                                label: Some("and".to_string()),
-                                value: Expression::new(
-                                    ExpressionKind::IntLiteral(4),
-                                    Span::from_range(14, 15),
-                                ),
-                            },
-                        ],
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
+        snap!(ast("print(3, and: 4)"), @r#"
+        Program(
+            [
+                ExpressionStatement {
+                    expr: Expression {
+                        span: Span {
+                            start: 0,
+                            end: 16,
+                        },
+                        kind: FunctionCall {
+                            name: "print",
+                            arguments: [
+                                FunctionArgument {
+                                    label: None,
+                                    value: Expression {
+                                        span: Span {
+                                            start: 6,
+                                            end: 7,
+                                        },
+                                        kind: IntLiteral(
+                                            3,
+                                        ),
+                                    },
+                                },
+                                FunctionArgument {
+                                    label: Some(
+                                        "and",
+                                    ),
+                                    value: Expression {
+                                        span: Span {
+                                            start: 14,
+                                            end: 15,
+                                        },
+                                        kind: IntLiteral(
+                                            4,
+                                        ),
+                                    },
+                                },
+                            ],
+                        },
                     },
-                    Span::from_range(0, 16),
-                ),
-                discarded: false,
-            }]),
-        );
+                    discarded: false,
+                },
+            ],
+        )
+        "#);
     }
 }

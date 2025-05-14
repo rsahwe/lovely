@@ -254,227 +254,265 @@ enum CheckedExpressionData {
 
 #[cfg(test)]
 mod tests {
-    use super::{BOOL_ID, Checker, INT_ID};
-    use crate::{
-        checker::{
-            CheckedExpression, CheckedExpressionData, CheckedExpressionStatement, CheckedProgram,
-            UNIT_ID,
-        },
-        parser::{
-            Parser,
-            ast::{InfixOperator, PrefixOperator},
-        },
-    };
-    use pretty_assertions::assert_eq;
+    use super::{CheckedProgram, Checker};
+    use crate::parser::Parser;
+    use insta::assert_debug_snapshot as snap;
 
-    fn test_checked(program: &str, expected: CheckedProgram) {
+    fn checked_program(program: &str) -> CheckedProgram {
         let ast = Parser::new(program).parse().unwrap();
         let mut checker = Checker::new();
-        let checked_program = checker.check_program(&ast);
-
-        assert_eq!(checked_program, expected);
+        checker.check_program(&ast)
     }
 
     #[test]
     fn single_primitive_literals() {
-        // Unit
-        test_checked(
-            "unit;",
-            CheckedProgram {
-                stmts: vec![CheckedExpressionStatement {
-                    expr: CheckedExpression::new(CheckedExpressionData::Unit, UNIT_ID),
-                }],
-            },
-        );
-
-        // Bool
-        test_checked(
-            "true; false;",
-            CheckedProgram {
-                stmts: vec![
-                    CheckedExpressionStatement {
-                        expr: CheckedExpression::new(
-                            CheckedExpressionData::BoolLiteral(true),
-                            BOOL_ID,
+        snap!(checked_program("unit;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 2,
+                        data: Unit,
+                    },
+                },
+            ],
+        }
+        ");
+        snap!(checked_program("unit;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 2,
+                        data: Unit,
+                    },
+                },
+            ],
+        }
+        ");
+        snap!(checked_program("true; false;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 1,
+                        data: BoolLiteral(
+                            true,
                         ),
                     },
-                    CheckedExpressionStatement {
-                        expr: CheckedExpression::new(
-                            CheckedExpressionData::BoolLiteral(false),
-                            BOOL_ID,
+                },
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 1,
+                        data: BoolLiteral(
+                            false,
                         ),
                     },
-                ],
-            },
-        );
-
-        // Int
-        test_checked(
-            "90; 3;",
-            CheckedProgram {
-                stmts: vec![
-                    CheckedExpressionStatement {
-                        expr: CheckedExpression::new(CheckedExpressionData::IntLiteral(90), INT_ID),
+                },
+            ],
+        }
+        ");
+        snap!(checked_program("90; 3;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            90,
+                        ),
                     },
-                    CheckedExpressionStatement {
-                        expr: CheckedExpression::new(CheckedExpressionData::IntLiteral(3), INT_ID),
+                },
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            3,
+                        ),
                     },
-                ],
-            },
-        );
+                },
+            ],
+        }
+        ");
     }
 
     #[test]
     fn prefix_expressions() {
-        test_checked(
-            "!true;",
-            CheckedProgram {
-                stmts: vec![CheckedExpressionStatement {
-                    expr: CheckedExpression::new(
-                        CheckedExpressionData::Prefix {
-                            operator: PrefixOperator::LogicalNot,
-                            expression: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::BoolLiteral(true),
-                                BOOL_ID,
-                            )),
+        snap!(checked_program("!true;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 1,
+                        data: Prefix {
+                            operator: LogicalNot,
+                            expression: CheckedExpression {
+                                type_id: 1,
+                                data: BoolLiteral(
+                                    true,
+                                ),
+                            },
                         },
-                        BOOL_ID,
-                    ),
-                }],
-            },
-        );
-
-        test_checked(
-            "-312;",
-            CheckedProgram {
-                stmts: vec![CheckedExpressionStatement {
-                    expr: CheckedExpression::new(
-                        CheckedExpressionData::Prefix {
-                            operator: PrefixOperator::Negative,
-                            expression: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::IntLiteral(312),
-                                INT_ID,
-                            )),
+                    },
+                },
+            ],
+        }
+        ");
+        snap!(checked_program("-312;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 0,
+                        data: Prefix {
+                            operator: Negative,
+                            expression: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    312,
+                                ),
+                            },
                         },
-                        INT_ID,
-                    ),
-                }],
-            },
-        );
+                    },
+                },
+            ],
+        }
+        ");
     }
 
     #[test]
     fn infix_expressions() {
-        test_checked(
-            "2 + 3 * 4 - 5",
-            CheckedProgram {
-                stmts: vec![CheckedExpressionStatement {
+        snap!(checked_program("2 + 3 * 4 - 5"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
                     expr: CheckedExpression {
-                        type_id: INT_ID,
-                        data: CheckedExpressionData::Infix {
-                            left: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::Infix {
-                                    left: Box::new(CheckedExpression::new(
-                                        CheckedExpressionData::IntLiteral(2),
-                                        INT_ID,
-                                    )),
-                                    operator: InfixOperator::Plus,
-                                    right: Box::new(CheckedExpression::new(
-                                        CheckedExpressionData::Infix {
-                                            left: Box::new(CheckedExpression::new(
-                                                CheckedExpressionData::IntLiteral(3),
-                                                INT_ID,
-                                            )),
-                                            operator: InfixOperator::Multiply,
-                                            right: Box::new(CheckedExpression::new(
-                                                CheckedExpressionData::IntLiteral(4),
-                                                INT_ID,
-                                            )),
+                        type_id: 0,
+                        data: Infix {
+                            left: CheckedExpression {
+                                type_id: 0,
+                                data: Infix {
+                                    left: CheckedExpression {
+                                        type_id: 0,
+                                        data: IntLiteral(
+                                            2,
+                                        ),
+                                    },
+                                    operator: Plus,
+                                    right: CheckedExpression {
+                                        type_id: 0,
+                                        data: Infix {
+                                            left: CheckedExpression {
+                                                type_id: 0,
+                                                data: IntLiteral(
+                                                    3,
+                                                ),
+                                            },
+                                            operator: Multiply,
+                                            right: CheckedExpression {
+                                                type_id: 0,
+                                                data: IntLiteral(
+                                                    4,
+                                                ),
+                                            },
                                         },
-                                        INT_ID,
-                                    )),
+                                    },
                                 },
-                                INT_ID,
-                            )),
-                            operator: InfixOperator::Minus,
-                            right: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::IntLiteral(5),
-                                INT_ID,
-                            )),
+                            },
+                            operator: Minus,
+                            right: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    5,
+                                ),
+                            },
                         },
                     },
-                }],
-            },
-        );
-
-        test_checked(
-            "4 > 3;",
-            CheckedProgram {
-                stmts: vec![CheckedExpressionStatement {
-                    expr: CheckedExpression::new(
-                        CheckedExpressionData::Infix {
-                            left: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::IntLiteral(4),
-                                INT_ID,
-                            )),
-                            operator: InfixOperator::GreaterThan,
-                            right: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::IntLiteral(3),
-                                INT_ID,
-                            )),
+                },
+            ],
+        }
+        ");
+        snap!(checked_program("4 > 3;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 1,
+                        data: Infix {
+                            left: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    4,
+                                ),
+                            },
+                            operator: GreaterThan,
+                            right: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    3,
+                                ),
+                            },
                         },
-                        BOOL_ID,
-                    ),
-                }],
-            },
-        );
-
-        test_checked(
-            "4 - -3 > 2 / 7;",
-            CheckedProgram {
-                stmts: vec![CheckedExpressionStatement {
-                    expr: CheckedExpression::new(
-                        CheckedExpressionData::Infix {
-                            left: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::Infix {
-                                    left: Box::new(CheckedExpression::new(
-                                        CheckedExpressionData::IntLiteral(4),
-                                        INT_ID,
-                                    )),
-                                    operator: InfixOperator::Minus,
-                                    right: Box::new(CheckedExpression::new(
-                                        CheckedExpressionData::Prefix {
-                                            operator: PrefixOperator::Negative,
-                                            expression: Box::new(CheckedExpression::new(
-                                                CheckedExpressionData::IntLiteral(3),
-                                                INT_ID,
-                                            )),
+                    },
+                },
+            ],
+        }
+        ");
+        snap!(checked_program("4 - -3 > 2 / 7;"), @r"
+        CheckedProgram {
+            stmts: [
+                CheckedExpressionStatement {
+                    expr: CheckedExpression {
+                        type_id: 1,
+                        data: Infix {
+                            left: CheckedExpression {
+                                type_id: 0,
+                                data: Infix {
+                                    left: CheckedExpression {
+                                        type_id: 0,
+                                        data: IntLiteral(
+                                            4,
+                                        ),
+                                    },
+                                    operator: Minus,
+                                    right: CheckedExpression {
+                                        type_id: 0,
+                                        data: Prefix {
+                                            operator: Negative,
+                                            expression: CheckedExpression {
+                                                type_id: 0,
+                                                data: IntLiteral(
+                                                    3,
+                                                ),
+                                            },
                                         },
-                                        INT_ID,
-                                    )),
+                                    },
                                 },
-                                INT_ID,
-                            )),
-                            operator: InfixOperator::GreaterThan,
-                            right: Box::new(CheckedExpression::new(
-                                CheckedExpressionData::Infix {
-                                    left: Box::new(CheckedExpression::new(
-                                        CheckedExpressionData::IntLiteral(2),
-                                        INT_ID,
-                                    )),
-                                    operator: InfixOperator::Divide,
-                                    right: Box::new(CheckedExpression::new(
-                                        CheckedExpressionData::IntLiteral(7),
-                                        INT_ID,
-                                    )),
+                            },
+                            operator: GreaterThan,
+                            right: CheckedExpression {
+                                type_id: 0,
+                                data: Infix {
+                                    left: CheckedExpression {
+                                        type_id: 0,
+                                        data: IntLiteral(
+                                            2,
+                                        ),
+                                    },
+                                    operator: Divide,
+                                    right: CheckedExpression {
+                                        type_id: 0,
+                                        data: IntLiteral(
+                                            7,
+                                        ),
+                                    },
                                 },
-                                INT_ID,
-                            )),
+                            },
                         },
-                        BOOL_ID,
-                    ),
-                }],
-            },
-        );
+                    },
+                },
+            ],
+        }
+        ");
     }
 }
