@@ -1,0 +1,156 @@
+---
+source: src/tests/mod.rs
+expression: ast
+input_file: src/tests/operators.lv
+---
+Program(
+    [
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 16,
+                    end: 21,
+                },
+                kind: Prefix {
+                    operator: LogicalNot,
+                    expression: Expression {
+                        span: Span {
+                            start: 17,
+                            end: 21,
+                        },
+                        kind: BoolLiteral(
+                            true,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 24,
+                    end: 26,
+                },
+                kind: Prefix {
+                    operator: Negative,
+                    expression: Expression {
+                        span: Span {
+                            start: 25,
+                            end: 26,
+                        },
+                        kind: IntLiteral(
+                            9,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 44,
+                    end: 55,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 44,
+                            end: 51,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 45,
+                                    end: 46,
+                                },
+                                kind: IntLiteral(
+                                    3,
+                                ),
+                            },
+                            operator: Minus,
+                            right: Expression {
+                                span: Span {
+                                    start: 49,
+                                    end: 50,
+                                },
+                                kind: IntLiteral(
+                                    4,
+                                ),
+                            },
+                        },
+                    },
+                    operator: Multiply,
+                    right: Expression {
+                        span: Span {
+                            start: 54,
+                            end: 55,
+                        },
+                        kind: IntLiteral(
+                            2,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 58,
+                    end: 79,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 58,
+                            end: 74,
+                        },
+                        kind: Infix {
+                            left: Expression {
+                                span: Span {
+                                    start: 58,
+                                    end: 69,
+                                },
+                                kind: IntLiteral(
+                                    3,
+                                ),
+                            },
+                            operator: Divide,
+                            right: Expression {
+                                span: Span {
+                                    start: 72,
+                                    end: 74,
+                                },
+                                kind: Prefix {
+                                    operator: Negative,
+                                    expression: Expression {
+                                        span: Span {
+                                            start: 73,
+                                            end: 74,
+                                        },
+                                        kind: IntLiteral(
+                                            7,
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    operator: Minus,
+                    right: Expression {
+                        span: Span {
+                            start: 77,
+                            end: 79,
+                        },
+                        kind: IntLiteral(
+                            22,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+    ],
+)

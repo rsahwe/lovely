@@ -19,7 +19,7 @@ const INT_ID: usize = 0;
 const BOOL_ID: usize = 1;
 const UNIT_ID: usize = 2;
 
-struct Checker {
+pub struct Checker {
     scopes: Vec<Scope>,
     types: Vec<ScopedType>,
     type_errors: Vec<TypeError>,
@@ -44,7 +44,7 @@ impl TypeError {
 }
 
 impl Checker {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             scopes: vec![Scope { parent_scope: None }],
             types: vec![
@@ -79,7 +79,7 @@ impl Checker {
         }
     }
 
-    fn check_program(&mut self, program: &Program) -> CheckedProgram {
+    pub fn check_program(&mut self, program: &Program) -> CheckedProgram {
         CheckedProgram {
             stmts: program
                 .0
@@ -214,7 +214,7 @@ impl Checker {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-struct CheckedProgram {
+pub struct CheckedProgram {
     stmts: Vec<CheckedExpressionStatement>,
 }
 
@@ -250,269 +250,4 @@ enum CheckedExpressionData {
         operator: InfixOperator,
         right: Box<CheckedExpression>,
     },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{CheckedProgram, Checker};
-    use crate::parser::Parser;
-    use insta::assert_debug_snapshot as snap;
-
-    fn checked_program(program: &str) -> CheckedProgram {
-        let ast = Parser::new(program).parse().unwrap();
-        let mut checker = Checker::new();
-        checker.check_program(&ast)
-    }
-
-    #[test]
-    fn single_primitive_literals() {
-        snap!(checked_program("unit;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 2,
-                        data: Unit,
-                    },
-                },
-            ],
-        }
-        ");
-        snap!(checked_program("unit;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 2,
-                        data: Unit,
-                    },
-                },
-            ],
-        }
-        ");
-        snap!(checked_program("true; false;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 1,
-                        data: BoolLiteral(
-                            true,
-                        ),
-                    },
-                },
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 1,
-                        data: BoolLiteral(
-                            false,
-                        ),
-                    },
-                },
-            ],
-        }
-        ");
-        snap!(checked_program("90; 3;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            90,
-                        ),
-                    },
-                },
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            3,
-                        ),
-                    },
-                },
-            ],
-        }
-        ");
-    }
-
-    #[test]
-    fn prefix_expressions() {
-        snap!(checked_program("!true;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 1,
-                        data: Prefix {
-                            operator: LogicalNot,
-                            expression: CheckedExpression {
-                                type_id: 1,
-                                data: BoolLiteral(
-                                    true,
-                                ),
-                            },
-                        },
-                    },
-                },
-            ],
-        }
-        ");
-        snap!(checked_program("-312;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 0,
-                        data: Prefix {
-                            operator: Negative,
-                            expression: CheckedExpression {
-                                type_id: 0,
-                                data: IntLiteral(
-                                    312,
-                                ),
-                            },
-                        },
-                    },
-                },
-            ],
-        }
-        ");
-    }
-
-    #[test]
-    fn infix_expressions() {
-        snap!(checked_program("2 + 3 * 4 - 5"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 0,
-                        data: Infix {
-                            left: CheckedExpression {
-                                type_id: 0,
-                                data: Infix {
-                                    left: CheckedExpression {
-                                        type_id: 0,
-                                        data: IntLiteral(
-                                            2,
-                                        ),
-                                    },
-                                    operator: Plus,
-                                    right: CheckedExpression {
-                                        type_id: 0,
-                                        data: Infix {
-                                            left: CheckedExpression {
-                                                type_id: 0,
-                                                data: IntLiteral(
-                                                    3,
-                                                ),
-                                            },
-                                            operator: Multiply,
-                                            right: CheckedExpression {
-                                                type_id: 0,
-                                                data: IntLiteral(
-                                                    4,
-                                                ),
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                            operator: Minus,
-                            right: CheckedExpression {
-                                type_id: 0,
-                                data: IntLiteral(
-                                    5,
-                                ),
-                            },
-                        },
-                    },
-                },
-            ],
-        }
-        ");
-        snap!(checked_program("4 > 3;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 1,
-                        data: Infix {
-                            left: CheckedExpression {
-                                type_id: 0,
-                                data: IntLiteral(
-                                    4,
-                                ),
-                            },
-                            operator: GreaterThan,
-                            right: CheckedExpression {
-                                type_id: 0,
-                                data: IntLiteral(
-                                    3,
-                                ),
-                            },
-                        },
-                    },
-                },
-            ],
-        }
-        ");
-        snap!(checked_program("4 - -3 > 2 / 7;"), @r"
-        CheckedProgram {
-            stmts: [
-                CheckedExpressionStatement {
-                    expr: CheckedExpression {
-                        type_id: 1,
-                        data: Infix {
-                            left: CheckedExpression {
-                                type_id: 0,
-                                data: Infix {
-                                    left: CheckedExpression {
-                                        type_id: 0,
-                                        data: IntLiteral(
-                                            4,
-                                        ),
-                                    },
-                                    operator: Minus,
-                                    right: CheckedExpression {
-                                        type_id: 0,
-                                        data: Prefix {
-                                            operator: Negative,
-                                            expression: CheckedExpression {
-                                                type_id: 0,
-                                                data: IntLiteral(
-                                                    3,
-                                                ),
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                            operator: GreaterThan,
-                            right: CheckedExpression {
-                                type_id: 0,
-                                data: Infix {
-                                    left: CheckedExpression {
-                                        type_id: 0,
-                                        data: IntLiteral(
-                                            2,
-                                        ),
-                                    },
-                                    operator: Divide,
-                                    right: CheckedExpression {
-                                        type_id: 0,
-                                        data: IntLiteral(
-                                            7,
-                                        ),
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            ],
-        }
-        ");
-    }
 }

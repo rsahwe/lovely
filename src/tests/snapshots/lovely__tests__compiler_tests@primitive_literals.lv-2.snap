@@ -1,0 +1,88 @@
+---
+source: src/tests/mod.rs
+expression: ast
+input_file: src/tests/primitive_literals.lv
+---
+Program(
+    [
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 21,
+                    end: 22,
+                },
+                kind: IntLiteral(
+                    0,
+                ),
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 37,
+                    end: 39,
+                },
+                kind: Prefix {
+                    operator: Negative,
+                    expression: Expression {
+                        span: Span {
+                            start: 38,
+                            end: 39,
+                        },
+                        kind: IntLiteral(
+                            3,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 56,
+                    end: 65,
+                },
+                kind: IntLiteral(
+                    123456789,
+                ),
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 83,
+                    end: 87,
+                },
+                kind: BoolLiteral(
+                    true,
+                ),
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 90,
+                    end: 95,
+                },
+                kind: BoolLiteral(
+                    false,
+                ),
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 112,
+                    end: 116,
+                },
+                kind: Unit,
+            },
+            discarded: false,
+        },
+    ],
+)

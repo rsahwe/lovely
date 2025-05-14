@@ -1,0 +1,20 @@
+# == INTS ==
+
+# zero
+0;
+
+# negatives
+-3;
+
+# big numbers
+123456789;
+
+# == BOOLS ==
+
+true;
+
+false;
+
+# == UNIT ==
+
+unit

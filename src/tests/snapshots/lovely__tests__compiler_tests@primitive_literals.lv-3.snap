@@ -1,0 +1,61 @@
+---
+source: src/tests/mod.rs
+expression: checked_program
+input_file: src/tests/primitive_literals.lv
+---
+CheckedProgram {
+    stmts: [
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 0,
+                data: IntLiteral(
+                    0,
+                ),
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 0,
+                data: Prefix {
+                    operator: Negative,
+                    expression: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            3,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 0,
+                data: IntLiteral(
+                    123456789,
+                ),
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: BoolLiteral(
+                    true,
+                ),
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: BoolLiteral(
+                    false,
+                ),
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 2,
+                data: Unit,
+            },
+        },
+    ],
+}

@@ -1,0 +1,107 @@
+---
+source: src/tests/mod.rs
+expression: checked_program
+input_file: src/tests/operators.lv
+---
+CheckedProgram {
+    stmts: [
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Prefix {
+                    operator: LogicalNot,
+                    expression: CheckedExpression {
+                        type_id: 1,
+                        data: BoolLiteral(
+                            true,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 0,
+                data: Prefix {
+                    operator: Negative,
+                    expression: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            9,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 0,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: Infix {
+                            left: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    3,
+                                ),
+                            },
+                            operator: Minus,
+                            right: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    4,
+                                ),
+                            },
+                        },
+                    },
+                    operator: Multiply,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            2,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 0,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: Infix {
+                            left: CheckedExpression {
+                                type_id: 0,
+                                data: IntLiteral(
+                                    3,
+                                ),
+                            },
+                            operator: Divide,
+                            right: CheckedExpression {
+                                type_id: 0,
+                                data: Prefix {
+                                    operator: Negative,
+                                    expression: CheckedExpression {
+                                        type_id: 0,
+                                        data: IntLiteral(
+                                            7,
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    operator: Minus,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            22,
+                        ),
+                    },
+                },
+            },
+        },
+    ],
+}

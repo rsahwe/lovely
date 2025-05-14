@@ -1,2 +1,1 @@
 - typecheck `Equal` and `NotEqual` infix expressions
-- set up snapshot testing
