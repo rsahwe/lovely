@@ -1,7 +1,7 @@
 ---
 source: src/tests/mod.rs
 expression: ast
-input_file: src/tests/operators.lv
+input_file: src/tests/source_files/operators.lv
 ---
 Program(
     [
@@ -146,6 +146,186 @@ Program(
                         },
                         kind: IntLiteral(
                             22,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 82,
+                    end: 87,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 82,
+                            end: 83,
+                        },
+                        kind: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: LessThan,
+                    right: Expression {
+                        span: Span {
+                            start: 86,
+                            end: 87,
+                        },
+                        kind: IntLiteral(
+                            5,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 89,
+                    end: 94,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 89,
+                            end: 90,
+                        },
+                        kind: IntLiteral(
+                            6,
+                        ),
+                    },
+                    operator: GreaterThan,
+                    right: Expression {
+                        span: Span {
+                            start: 93,
+                            end: 94,
+                        },
+                        kind: IntLiteral(
+                            2,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 96,
+                    end: 102,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 96,
+                            end: 97,
+                        },
+                        kind: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: LessThanOrEqual,
+                    right: Expression {
+                        span: Span {
+                            start: 101,
+                            end: 102,
+                        },
+                        kind: IntLiteral(
+                            5,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 104,
+                    end: 110,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 104,
+                            end: 105,
+                        },
+                        kind: IntLiteral(
+                            6,
+                        ),
+                    },
+                    operator: GreaterThanOrEqual,
+                    right: Expression {
+                        span: Span {
+                            start: 109,
+                            end: 110,
+                        },
+                        kind: IntLiteral(
+                            2,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 113,
+                    end: 119,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 113,
+                            end: 114,
+                        },
+                        kind: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: Equal,
+                    right: Expression {
+                        span: Span {
+                            start: 118,
+                            end: 119,
+                        },
+                        kind: IntLiteral(
+                            5,
+                        ),
+                    },
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 121,
+                    end: 127,
+                },
+                kind: Infix {
+                    left: Expression {
+                        span: Span {
+                            start: 121,
+                            end: 122,
+                        },
+                        kind: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: NotEqual,
+                    right: Expression {
+                        span: Span {
+                            start: 126,
+                            end: 127,
+                        },
+                        kind: IntLiteral(
+                            5,
                         ),
                     },
                 },

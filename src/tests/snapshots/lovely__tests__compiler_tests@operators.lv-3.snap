@@ -1,7 +1,7 @@
 ---
 source: src/tests/mod.rs
 expression: checked_program
-input_file: src/tests/operators.lv
+input_file: src/tests/source_files/operators.lv
 ---
 CheckedProgram {
     stmts: [
@@ -98,6 +98,126 @@ CheckedProgram {
                         type_id: 0,
                         data: IntLiteral(
                             22,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: LessThan,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            5,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            6,
+                        ),
+                    },
+                    operator: GreaterThan,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            2,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: LessThanOrEqual,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            5,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            6,
+                        ),
+                    },
+                    operator: GreaterThanOrEqual,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            2,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: Equal,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            5,
+                        ),
+                    },
+                },
+            },
+        },
+        CheckedExpressionStatement {
+            expr: CheckedExpression {
+                type_id: 1,
+                data: Infix {
+                    left: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            3,
+                        ),
+                    },
+                    operator: NotEqual,
+                    right: CheckedExpression {
+                        type_id: 0,
+                        data: IntLiteral(
+                            5,
                         ),
                     },
                 },

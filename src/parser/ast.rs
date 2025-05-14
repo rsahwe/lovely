@@ -111,9 +111,10 @@ pub enum Type {
 #[derive(Ord, Eq, PartialEq, PartialOrd, Debug)]
 pub enum Precedence {
     Lowest,
-    Comparison,
-    Sum,     // + or -
-    Product, // * or /
-    Group,   // ( )
-    Prefix,  // -X or !X
+    Equality,   // == or !=
+    Comparison, // <, <=, >, >=
+    Sum,        // + or -
+    Product,    // * or /
+    Group,      // ( )
+    Prefix,     // -X or !X
 }

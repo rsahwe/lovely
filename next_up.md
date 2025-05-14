@@ -1,1 +1,0 @@
-- typecheck `Equal` and `NotEqual` infix expressions

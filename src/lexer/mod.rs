@@ -57,7 +57,7 @@ impl<'src> Lexer<'src> {
                 {
                     Token::new(DoubleEqual, cur_index, 2)
                 } else {
-                    Token::new(Equal, cur_index, 1)
+                    Token::new(SingleEqual, cur_index, 1)
                 }
             }
             '!' => {
@@ -225,7 +225,7 @@ calc(foo, bar)"#
                 (Identifier, "bar"),
                 (Colon, ":"),
                 (Identifier, "Int"),
-                (Equal, "="),
+                (SingleEqual, "="),
                 (IntLiteral, "33"),
                 (Semicolon, ";"),
                 (Unit, "unit"),

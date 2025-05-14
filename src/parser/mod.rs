@@ -132,6 +132,20 @@ impl<'src> Parser<'src> {
                         Precedence::Comparison,
                     )?;
                 }
+                DoubleEqual => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::Equal,
+                        Precedence::Equality,
+                    )?;
+                }
+                NotEqual => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::NotEqual,
+                        Precedence::Equality,
+                    )?;
+                }
                 tok => return Err(Error::syntax_err(&format!("invalid operator: {tok}"))),
             }
         }
@@ -332,8 +346,8 @@ impl<'src> Parser<'src> {
                 mutable = false;
                 value = self.parse_expression(Precedence::Lowest)?;
             }
-            Equal => {
-                self.expect_token(Equal)?;
+            SingleEqual => {
+                self.expect_token(SingleEqual)?;
                 mutable = true;
                 value = self.parse_expression(Precedence::Lowest)?;
             }
@@ -470,6 +484,7 @@ impl<'src> Parser<'src> {
 
     fn cur_precedence(&mut self) -> Result<Precedence, Error> {
         Ok(match self.peek_kind() {
+            DoubleEqual | NotEqual => Precedence::Equality,
             LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual => Precedence::Comparison,
             Plus | Minus => Precedence::Sum,
             Asterisk | Slash => Precedence::Product,

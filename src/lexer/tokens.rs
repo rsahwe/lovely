@@ -11,15 +11,15 @@ pub enum TokenKind {
     False, // false
 
     // syntax
-    LParen,    // (
-    RParen,    // )
-    LBrace,    // {
-    RBrace,    // }
-    Colon,     // :
-    Comma,     // ,
-    Tilde,     // ~
-    Semicolon, // ;
-    Equal,     // =
+    LParen,      // (
+    RParen,      // )
+    LBrace,      // {
+    RBrace,      // }
+    Colon,       // :
+    Comma,       // ,
+    Tilde,       // ~
+    Semicolon,   // ;
+    SingleEqual, // =
 
     // operators:
     ExclamationMark,    // !
@@ -60,7 +60,7 @@ impl Display for TokenKind {
             TokenKind::Comma => ",",
             TokenKind::Tilde => "~",
             TokenKind::Semicolon => ";",
-            TokenKind::Equal => "=",
+            TokenKind::SingleEqual => "=",
             TokenKind::ExclamationMark => "!",
             TokenKind::Plus => "+",
             TokenKind::Minus => "-",

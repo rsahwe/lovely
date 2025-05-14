@@ -1,7 +1,7 @@
 ---
 source: src/tests/mod.rs
 expression: tokens
-input_file: src/tests/operators.lv
+input_file: src/tests/source_files/operators.lv
 ---
 [
     Token {
@@ -219,6 +219,174 @@ input_file: src/tests/operators.lv
         span: Span {
             start: 79,
             end: 80,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 82,
+            end: 83,
+        },
+    },
+    Token {
+        kind: LessThan,
+        span: Span {
+            start: 84,
+            end: 85,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 86,
+            end: 87,
+        },
+    },
+    Token {
+        kind: Semicolon,
+        span: Span {
+            start: 87,
+            end: 88,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 89,
+            end: 90,
+        },
+    },
+    Token {
+        kind: GreaterThan,
+        span: Span {
+            start: 91,
+            end: 92,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 93,
+            end: 94,
+        },
+    },
+    Token {
+        kind: Semicolon,
+        span: Span {
+            start: 94,
+            end: 95,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 96,
+            end: 97,
+        },
+    },
+    Token {
+        kind: LessThanOrEqual,
+        span: Span {
+            start: 98,
+            end: 100,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 101,
+            end: 102,
+        },
+    },
+    Token {
+        kind: Semicolon,
+        span: Span {
+            start: 102,
+            end: 103,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 104,
+            end: 105,
+        },
+    },
+    Token {
+        kind: GreaterThanOrEqual,
+        span: Span {
+            start: 106,
+            end: 108,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 109,
+            end: 110,
+        },
+    },
+    Token {
+        kind: Semicolon,
+        span: Span {
+            start: 110,
+            end: 111,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 113,
+            end: 114,
+        },
+    },
+    Token {
+        kind: DoubleEqual,
+        span: Span {
+            start: 115,
+            end: 117,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 118,
+            end: 119,
+        },
+    },
+    Token {
+        kind: Semicolon,
+        span: Span {
+            start: 119,
+            end: 120,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 121,
+            end: 122,
+        },
+    },
+    Token {
+        kind: NotEqual,
+        span: Span {
+            start: 123,
+            end: 125,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 126,
+            end: 127,
+        },
+    },
+    Token {
+        kind: Semicolon,
+        span: Span {
+            start: 127,
+            end: 128,
         },
     },
 ]

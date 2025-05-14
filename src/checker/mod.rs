@@ -184,8 +184,24 @@ impl Checker {
                 }
 
                 // anything
-                Equal => todo!(),
-                NotEqual => todo!(),
+                Equal | NotEqual => {
+                    let left = self.check_expression(left, None)?;
+                    let right = self.check_expression(right, None)?;
+                    if left.type_id != right.type_id {
+                        Err(TypeError::mismatch(left.type_id, right.type_id, expr.span))
+                    } else {
+                        self.typed_expression(
+                            CheckedExpressionData::Infix {
+                                left: Box::new(left),
+                                operator: *operator,
+                                right: Box::new(right),
+                            },
+                            expr.span,
+                            BOOL_ID,
+                            type_hint,
+                        )
+                    }
+                }
             },
             ExpressionKind::VariableDecl { .. } => todo!(),
             ExpressionKind::Ident(_) => todo!(),
