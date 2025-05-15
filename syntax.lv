@@ -1,0 +1,99 @@
+# comments start with `#`
+
+# variable declarations:
+
+x :: 4; # immutable
+y := 8; # mutable
+
+# you can also specify the type
+my_unit : Unit : unit;
+my_bool : Bool = false;
+
+# definition and initialization can also be separate:
+my_var : 8;
+my_var = 7;
+#      ^ this hints that mutability as a concepts exists on a per-instantiation
+#        basis, which is a concept that comes up in other places in Lovely
+
+# functions are just expressions and are assigned to variables as such
+add :: fun (~first: Int, to second: Int) Int {
+  first + second # leave off the semicolon to not discard the result of an expression statement
+};
+
+add(3, to: 7);
+
+# user defined types:
+
+# regular enum
+type Foo {
+  Bar,
+  Baz,
+};
+
+# enum with an attribute
+type Foo {
+  # this resembles a declaration: `data : Int;`
+  @data : Int;
+
+  Bar,
+  Baz,
+};
+
+# enum with associated values and attributes
+type Animal {
+  @can_bite : Bool;
+  @name : String;
+
+  Cat,
+  Dog({
+    @breed : String;
+  }),
+  Fish,
+};
+
+# instantiating enums:
+my_foo :: Foo.Bar { data : 8 };
+my_animal :: Animal.Dog({ breed : "lab" }) {
+  can_bite : true,
+  name : "Steve",
+};
+
+# attributes can have default values
+type Foo {
+  @data : Int = 10;
+  @inferred_data := 10;
+};
+
+# they can also have constant default values
+# these values cannot be changed by any instance of the type
+type Foo {
+  @data : Int : 10;
+  @inferred_data :: 10;
+
+  # methods are just constant default values
+  @method :: fun () {};
+};
+
+# if no variants are specified, you get one for free called `Default`
+# this ends up behaving similarily to structs in other languages
+type Bar {
+  @data : Int;
+  @data_default : Int = 10;
+  @inferred_default := 10;
+  @const_data : Int : 10;
+  @const_inferred :: 10;
+  @method :: fun () {};
+};
+
+# default attributes don't need to be specified, and you also
+# can leave off the `.Default` because it's the only variant
+my_bar :: Bar { data : 10 };
+
+# use `=` for mutable fields
+my_mut_bar := Bar { data = 10 };
+
+# access data or call a method using `.@`
+my_bar.@method();
+
+# you can use mutable and immutable fields in the same instantiation of a type
+my_other_bar := Bar { data : 10, data_default = 5 };
