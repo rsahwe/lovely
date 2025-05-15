@@ -4,6 +4,7 @@
 - [x] bitwise operators
 - [ ] shift operators (`<<`, `>>`)
 - [ ] logical operators (`&&`, `||`)
+- [ ] deal with shadowing
 
 # infra
 - [ ] snapshot testing for parser

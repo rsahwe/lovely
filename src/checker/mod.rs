@@ -9,11 +9,12 @@ use crate::{
     },
     span::Span,
 };
-use scopes::{Scope, ScopeId, ScopedType};
+use scopes::{Scope, ScopeId, ScopedType, ScopedVariable};
 
 mod scopes;
 
-type TypeId = usize;
+pub type TypeId = usize;
+type VariableId = usize;
 
 const INT_ID: usize = 0;
 const BOOL_ID: usize = 1;
@@ -23,23 +24,33 @@ pub struct Checker {
     cur_scope: ScopeId,
     scopes: Vec<Scope>,
     types: Vec<ScopedType>,
-    type_errors: Vec<TypeError>,
+    variables: Vec<ScopedVariable>,
+    type_errors: Vec<Error>,
 }
 
 #[derive(Debug)]
-struct TypeError {
+struct Error {
     span: Span,
-    kind: TypeErrorKind,
+    kind: ErrorKind,
 }
 #[derive(Debug)]
-enum TypeErrorKind {
+enum ErrorKind {
     TypeMismatch { expected: TypeId, got: TypeId },
+    VariableNotFound { name: String },
 }
-impl TypeError {
-    fn mismatch(expected: TypeId, got: TypeId, span: Span) -> TypeError {
-        TypeError {
+impl Error {
+    fn type_mismatch(expected: TypeId, got: TypeId, span: Span) -> Error {
+        Error {
             span,
-            kind: TypeErrorKind::TypeMismatch { expected, got },
+            kind: ErrorKind::TypeMismatch { expected, got },
+        }
+    }
+    fn variable_not_found(name: &str, span: Span) -> Error {
+        Error {
+            span,
+            kind: ErrorKind::VariableNotFound {
+                name: name.to_string(),
+            },
         }
     }
 }
@@ -55,6 +66,7 @@ impl Checker {
                 ScopedType::new("Bool", 0),
                 ScopedType::new("Unit", 0),
             ],
+            variables: vec![],
             type_errors: vec![],
         }
     }
@@ -66,7 +78,7 @@ impl Checker {
         self.scopes.len() - 1
     }
 
-    fn check_typename(&self, ty: &Type, scope_id: ScopeId) -> Option<TypeId> {
+    fn check_type_name(&self, ty: &Type, scope_id: ScopeId) -> Option<TypeId> {
         let cur_scope = &self.scopes[scope_id];
         let Type::Ident(name) = ty;
         if let Some(type_id) = self
@@ -76,10 +88,37 @@ impl Checker {
         {
             Some(type_id)
         } else if let Some(parent_id) = cur_scope.parent_scope {
-            self.check_typename(ty, parent_id)
+            self.check_type_name(ty, parent_id)
         } else {
             None
         }
+    }
+
+    fn check_variable_name(
+        &self,
+        var_name: &str,
+        scope_id: ScopeId,
+    ) -> Option<(VariableId, TypeId)> {
+        let cur_scope = &self.scopes[scope_id];
+        if let Some((index, variable)) = self
+            .variables
+            .iter()
+            .enumerate()
+            .find(|t| t.1.scope_id == scope_id && t.1.name == var_name)
+        {
+            Some((index, variable.type_id))
+        } else if let Some(parent_id) = cur_scope.parent_scope {
+            self.check_variable_name(var_name, parent_id)
+        } else {
+            None
+        }
+    }
+
+    fn add_variable(&mut self, var_name: &str, var_type: TypeId) -> VariableId {
+        let variable_id = self.variables.len();
+        self.variables
+            .push(ScopedVariable::new(var_name, self.cur_scope, var_type));
+        variable_id
     }
 
     pub fn check_program(&mut self, program: &Program) -> CheckedProgram {
@@ -95,7 +134,7 @@ impl Checker {
     fn check_expression_statment(
         &mut self,
         stmt: &ExpressionStatement,
-    ) -> Result<CheckedExpressionStatement, TypeError> {
+    ) -> Result<CheckedExpressionStatement, Error> {
         Ok(CheckedExpressionStatement {
             expr: self.check_expression(&stmt.expr, None)?,
         })
@@ -105,7 +144,7 @@ impl Checker {
         &mut self,
         expr: &Expression,
         type_hint: Option<TypeId>,
-    ) -> Result<CheckedExpression, TypeError> {
+    ) -> Result<CheckedExpression, Error> {
         match &expr.kind {
             ExpressionKind::Unit => {
                 self.typed_expression(CheckedExpressionData::Unit, expr.span, UNIT_ID, type_hint)
@@ -191,7 +230,7 @@ impl Checker {
                     let left = self.check_expression(left, None)?;
                     let right = self.check_expression(right, None)?;
                     if left.type_id != right.type_id {
-                        Err(TypeError::mismatch(left.type_id, right.type_id, expr.span))
+                        Err(Error::type_mismatch(left.type_id, right.type_id, expr.span))
                     } else {
                         self.typed_expression(
                             CheckedExpressionData::Infix {
@@ -213,22 +252,38 @@ impl Checker {
                 ty,
             } => {
                 let r_value = if let Some(ty) = ty {
-                    self.check_expression(value, self.check_typename(ty, self.cur_scope))?
+                    self.check_expression(value, self.check_type_name(ty, self.cur_scope))?
                 } else {
                     self.check_expression(value, None)?
                 };
+                let id = self.add_variable(name, r_value.type_id);
                 self.typed_expression(
                     CheckedExpressionData::VariableDecl {
                         name: name.to_string(),
                         value: Box::new(r_value),
                         mutable: *mutable,
+                        variable_id: id,
                     },
                     expr.span,
                     UNIT_ID,
-                    None,
+                    type_hint,
                 )
             }
-            ExpressionKind::Ident(_) => todo!(),
+            ExpressionKind::Ident(name) => {
+                if let Some((var_id, var_type)) = self.check_variable_name(name, self.cur_scope) {
+                    self.typed_expression(
+                        CheckedExpressionData::Ident {
+                            name: name.to_string(),
+                            variable_id: var_id,
+                        },
+                        expr.span,
+                        var_type,
+                        type_hint,
+                    )
+                } else {
+                    Err(Error::variable_not_found(name, expr.span))
+                }
+            }
             ExpressionKind::Function { .. } => todo!(),
             ExpressionKind::FunctionCall { .. } => todo!(),
         }
@@ -240,12 +295,12 @@ impl Checker {
         span: Span,
         res_type: TypeId,
         type_hint: Option<TypeId>,
-    ) -> Result<CheckedExpression, TypeError> {
+    ) -> Result<CheckedExpression, Error> {
         if let Some(type_hint) = type_hint {
             if type_hint == res_type {
                 Ok(CheckedExpression::new(res, res_type))
             } else {
-                Err(TypeError::mismatch(type_hint, res_type, span))
+                Err(Error::type_mismatch(type_hint, res_type, span))
             }
         } else {
             Ok(CheckedExpression::new(res, res_type))
@@ -279,7 +334,10 @@ enum CheckedExpressionData {
     Unit,
     BoolLiteral(bool),
     IntLiteral(isize),
-    Ident(String),
+    Ident {
+        name: String,
+        variable_id: VariableId,
+    },
 
     Prefix {
         operator: PrefixOperator,
@@ -295,5 +353,6 @@ enum CheckedExpressionData {
         name: String,
         value: Box<CheckedExpression>,
         mutable: bool,
+        variable_id: VariableId,
     },
 }

@@ -1,7 +1,7 @@
 ---
 source: src/tests/mod.rs
 expression: checked_program
-input_file: src/tests/source_files/variable_decls.lv
+input_file: src/tests/source_files/idents.lv
 ---
 CheckedProgram {
     stmts: [
@@ -9,14 +9,14 @@ CheckedProgram {
             expr: CheckedExpression {
                 type_id: 2,
                 data: VariableDecl {
-                    name: "foo",
+                    name: "a",
                     value: CheckedExpression {
                         type_id: 0,
                         data: IntLiteral(
-                            6,
+                            12,
                         ),
                     },
-                    mutable: false,
+                    mutable: true,
                     variable_id: 0,
                 },
             },
@@ -25,11 +25,11 @@ CheckedProgram {
             expr: CheckedExpression {
                 type_id: 2,
                 data: VariableDecl {
-                    name: "bar",
+                    name: "b",
                     value: CheckedExpression {
                         type_id: 0,
                         data: IntLiteral(
-                            7,
+                            9,
                         ),
                     },
                     mutable: true,
@@ -41,12 +41,26 @@ CheckedProgram {
             expr: CheckedExpression {
                 type_id: 2,
                 data: VariableDecl {
-                    name: "baz",
+                    name: "c",
                     value: CheckedExpression {
-                        type_id: 1,
-                        data: BoolLiteral(
-                            true,
-                        ),
+                        type_id: 0,
+                        data: Infix {
+                            left: CheckedExpression {
+                                type_id: 0,
+                                data: Ident {
+                                    name: "a",
+                                    variable_id: 0,
+                                },
+                            },
+                            operator: Plus,
+                            right: CheckedExpression {
+                                type_id: 0,
+                                data: Ident {
+                                    name: "b",
+                                    variable_id: 1,
+                                },
+                            },
+                        },
                     },
                     mutable: true,
                     variable_id: 2,
@@ -55,15 +69,10 @@ CheckedProgram {
         },
         CheckedExpressionStatement {
             expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "qux",
-                    value: CheckedExpression {
-                        type_id: 2,
-                        data: Unit,
-                    },
-                    mutable: false,
-                    variable_id: 3,
+                type_id: 0,
+                data: Ident {
+                    name: "c",
+                    variable_id: 2,
                 },
             },
         },
