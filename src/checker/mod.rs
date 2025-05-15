@@ -5,7 +5,7 @@ use crate::{
         Expression, ExpressionKind, ExpressionStatement,
         InfixOperator::{self, *},
         PrefixOperator::{self, *},
-        Program,
+        Program, Type,
     },
     span::Span,
 };
@@ -20,6 +20,7 @@ const BOOL_ID: usize = 1;
 const UNIT_ID: usize = 2;
 
 pub struct Checker {
+    cur_scope: ScopeId,
     scopes: Vec<Scope>,
     types: Vec<ScopedType>,
     type_errors: Vec<TypeError>,
@@ -46,6 +47,7 @@ impl TypeError {
 impl Checker {
     pub fn new() -> Self {
         Self {
+            cur_scope: 0,
             scopes: vec![Scope { parent_scope: None }],
             types: vec![
                 // builtin types
@@ -64,16 +66,17 @@ impl Checker {
         self.scopes.len() - 1
     }
 
-    fn lookup_type(&self, name: &str, scope_id: ScopeId) -> Option<TypeId> {
+    fn check_typename(&self, ty: &Type, scope_id: ScopeId) -> Option<TypeId> {
         let cur_scope = &self.scopes[scope_id];
+        let Type::Ident(name) = ty;
         if let Some(type_id) = self
             .types
             .iter()
-            .position(|t| t.scope_id == scope_id && t.name == name)
+            .position(|t| t.scope_id == scope_id && &t.name == name)
         {
             Some(type_id)
         } else if let Some(parent_id) = cur_scope.parent_scope {
-            self.lookup_type(name, parent_id)
+            self.check_typename(ty, parent_id)
         } else {
             None
         }
@@ -203,7 +206,28 @@ impl Checker {
                     }
                 }
             },
-            ExpressionKind::VariableDecl { .. } => todo!(),
+            ExpressionKind::VariableDecl {
+                name,
+                value,
+                mutable,
+                ty,
+            } => {
+                let r_value = if let Some(ty) = ty {
+                    self.check_expression(value, self.check_typename(ty, self.cur_scope))?
+                } else {
+                    self.check_expression(value, None)?
+                };
+                self.typed_expression(
+                    CheckedExpressionData::VariableDecl {
+                        name: name.to_string(),
+                        value: Box::new(r_value),
+                        mutable: *mutable,
+                    },
+                    expr.span,
+                    UNIT_ID,
+                    None,
+                )
+            }
             ExpressionKind::Ident(_) => todo!(),
             ExpressionKind::Function { .. } => todo!(),
             ExpressionKind::FunctionCall { .. } => todo!(),
@@ -265,5 +289,11 @@ enum CheckedExpressionData {
         left: Box<CheckedExpression>,
         operator: InfixOperator,
         right: Box<CheckedExpression>,
+    },
+
+    VariableDecl {
+        name: String,
+        value: Box<CheckedExpression>,
+        mutable: bool,
     },
 }

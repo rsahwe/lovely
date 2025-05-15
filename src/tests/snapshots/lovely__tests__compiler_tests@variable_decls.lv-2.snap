@@ -1,0 +1,107 @@
+---
+source: src/tests/mod.rs
+expression: ast
+input_file: src/tests/source_files/variable_decls.lv
+---
+Program(
+    [
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 0,
+                    end: 8,
+                },
+                kind: VariableDecl {
+                    name: "foo",
+                    value: Expression {
+                        span: Span {
+                            start: 7,
+                            end: 8,
+                        },
+                        kind: IntLiteral(
+                            6,
+                        ),
+                    },
+                    mutable: false,
+                    ty: None,
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 11,
+                    end: 19,
+                },
+                kind: VariableDecl {
+                    name: "bar",
+                    value: Expression {
+                        span: Span {
+                            start: 18,
+                            end: 19,
+                        },
+                        kind: IntLiteral(
+                            7,
+                        ),
+                    },
+                    mutable: true,
+                    ty: None,
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 22,
+                    end: 39,
+                },
+                kind: VariableDecl {
+                    name: "baz",
+                    value: Expression {
+                        span: Span {
+                            start: 35,
+                            end: 39,
+                        },
+                        kind: BoolLiteral(
+                            true,
+                        ),
+                    },
+                    mutable: true,
+                    ty: Some(
+                        Ident(
+                            "Bool",
+                        ),
+                    ),
+                },
+            },
+            discarded: true,
+        },
+        ExpressionStatement {
+            expr: Expression {
+                span: Span {
+                    start: 42,
+                    end: 59,
+                },
+                kind: VariableDecl {
+                    name: "qux",
+                    value: Expression {
+                        span: Span {
+                            start: 55,
+                            end: 59,
+                        },
+                        kind: Unit,
+                    },
+                    mutable: false,
+                    ty: Some(
+                        Ident(
+                            "Unit",
+                        ),
+                    ),
+                },
+            },
+            discarded: true,
+        },
+    ],
+)
