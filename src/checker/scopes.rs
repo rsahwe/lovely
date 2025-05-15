@@ -22,13 +22,20 @@ impl ScopedVariable {
 }
 
 pub struct ScopedType {
-    pub name: String,
+    pub kind: TypeKind,
     pub scope_id: ScopeId,
 }
+enum TypeKind {
+    Name(String),
+    Function {
+        parameters: Vec<ScopedType>,
+        return_type: Box<ScopedType>,
+    },
+}
 impl ScopedType {
-    pub fn new(name: &str, scope_id: ScopeId) -> Self {
+    pub fn named(name: &str, scope_id: ScopeId) -> Self {
         ScopedType {
-            name: name.to_string(),
+            kind: TypeKind::Name(name.to_string()),
             scope_id,
         }
     }

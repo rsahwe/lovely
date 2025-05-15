@@ -1,0 +1,3 @@
+add :: fun (~x: Int, to y: Int) -> Int {
+  x + y
+}

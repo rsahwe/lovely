@@ -2,7 +2,7 @@
 
 use crate::{
     parser::ast::{
-        Expression, ExpressionKind, ExpressionStatement,
+        Expression, ExpressionKind, ExpressionStatement, FunctionParameter,
         InfixOperator::{self, *},
         PrefixOperator::{self, *},
         Program, Type,
@@ -37,6 +37,7 @@ struct Error {
 enum ErrorKind {
     TypeMismatch { expected: TypeId, got: TypeId },
     VariableNotFound { name: String },
+    TypeNotFound { ty: Type },
 }
 impl Error {
     fn type_mismatch(expected: TypeId, got: TypeId, span: Span) -> Error {
@@ -53,6 +54,12 @@ impl Error {
             },
         }
     }
+    fn type_not_found(ty: Type, span: Span) -> Error {
+        Error {
+            span,
+            kind: ErrorKind::TypeNotFound { ty },
+        }
+    }
 }
 
 impl Checker {
@@ -62,9 +69,9 @@ impl Checker {
             scopes: vec![Scope { parent_scope: None }],
             types: vec![
                 // builtin types
-                ScopedType::new("Int", 0),
-                ScopedType::new("Bool", 0),
-                ScopedType::new("Unit", 0),
+                ScopedType::named("Int", 0),
+                ScopedType::named("Bool", 0),
+                ScopedType::named("Unit", 0),
             ],
             variables: vec![],
             type_errors: vec![],
@@ -136,6 +143,7 @@ impl Checker {
         stmt: &ExpressionStatement,
     ) -> Result<CheckedExpressionStatement, Error> {
         Ok(CheckedExpressionStatement {
+            discarded: stmt.discarded,
             expr: self.check_expression(&stmt.expr, None)?,
         })
     }
@@ -284,7 +292,97 @@ impl Checker {
                     Err(Error::variable_not_found(name, expr.span))
                 }
             }
-            ExpressionKind::Function { .. } => todo!(),
+            ExpressionKind::Function {
+                parameters,
+                return_type,
+                body,
+            } => {
+                // create a new scope
+                let new_scope = self.create_scope(Some(self.cur_scope));
+                self.cur_scope = new_scope;
+
+                let mut checked_params = vec![];
+
+                // add params as local variables in said scope
+                for param in parameters {
+                    match param {
+                        FunctionParameter::LabeledAtCallsite {
+                            internal_name,
+                            external_name,
+                            ty,
+                        } => {
+                            if let Some(type_id) = self.check_type_name(ty, self.cur_scope) {
+                                checked_params.push(CheckedFunctionParameter::LabeledAtCallsite {
+                                    internal_name: internal_name.clone(),
+                                    external_name: external_name.clone(),
+                                    type_id,
+                                });
+                                self.add_variable(internal_name, type_id);
+                            } else {
+                                return Err(Error::type_not_found(ty.clone(), expr.span));
+                            }
+                        }
+                        FunctionParameter::UnlabeledAtCallsite { name, ty } => {
+                            if let Some(type_id) = self.check_type_name(ty, self.cur_scope) {
+                                checked_params.push(
+                                    CheckedFunctionParameter::UnlabeledAtCallsite {
+                                        name: name.clone(),
+                                        type_id,
+                                    },
+                                );
+                                self.add_variable(name, type_id);
+                            } else {
+                                return Err(Error::type_not_found(ty.clone(), expr.span));
+                            }
+                        }
+                    }
+                }
+
+                // check the body
+                let checked_expr_stmts = body
+                    .iter()
+                    .map(|s| self.check_expression_statment(s).unwrap())
+                    .collect::<Vec<_>>();
+
+                let Some(last_stmt) = checked_expr_stmts.last() else {
+                    todo!("empty function body, only valid if return type is unit");
+                };
+                if last_stmt.discarded {
+                    todo!(
+                        "discarded last statement in function body, only valid if return type is unit"
+                    );
+                }
+
+                // get return type
+                let return_type = if let Some(ty) = return_type {
+                    ty
+                } else {
+                    &Type::Ident("Unit".to_string())
+                };
+                let Some(return_type_id) = self.check_type_name(return_type, self.cur_scope) else {
+                    return Err(Error::type_not_found(return_type.clone(), expr.span));
+                };
+
+                // check if the last statement is of the same type as the return type
+                if last_stmt.expr.type_id != return_type_id {
+                    return Err(Error::type_mismatch(
+                        return_type_id,
+                        last_stmt.expr.type_id,
+                        expr.span,
+                    ));
+                }
+
+                self.typed_expression(
+                    CheckedExpressionData::Function {
+                        parameters: checked_params,
+                        return_type: return_type_id,
+                        body: checked_expr_stmts,
+                    },
+                    expr.span,
+                    todo!("function types"),
+                    type_hint,
+                )
+            }
             ExpressionKind::FunctionCall { .. } => todo!(),
         }
     }
@@ -316,6 +414,7 @@ pub struct CheckedProgram {
 #[derive(PartialEq, Eq, Debug)]
 struct CheckedExpressionStatement {
     expr: CheckedExpression,
+    discarded: bool,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -354,5 +453,24 @@ enum CheckedExpressionData {
         value: Box<CheckedExpression>,
         mutable: bool,
         variable_id: VariableId,
+    },
+
+    Function {
+        parameters: Vec<CheckedFunctionParameter>,
+        return_type: TypeId,
+        body: Vec<CheckedExpressionStatement>,
+    },
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub enum CheckedFunctionParameter {
+    LabeledAtCallsite {
+        internal_name: String,
+        external_name: Option<String>,
+        type_id: TypeId,
+    },
+    UnlabeledAtCallsite {
+        name: String,
+        type_id: TypeId,
     },
 }

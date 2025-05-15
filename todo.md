@@ -5,6 +5,7 @@
 - [ ] shift operators (`<<`, `>>`)
 - [ ] logical operators (`&&`, `||`)
 - [ ] deal with shadowing
+- [ ] error handling
 
 # infra
 - [ ] snapshot testing for parser

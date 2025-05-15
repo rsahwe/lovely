@@ -115,3 +115,16 @@ expr := Expression.Call({
   span = ...
 };
 ```
+
+## Functions
+
+```lovely
+
+calc :: fun (~x: Int, and y: Int) -> fun (Int) -> Int {
+  foo :: x * x;
+  bar :: foo / y;
+  bar * bar
+};
+
+calc(x, and: y);
+```

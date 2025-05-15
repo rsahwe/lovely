@@ -332,7 +332,7 @@ impl<'src> Parser<'src> {
         self.expect_token(Colon)?;
 
         let mut ty = None;
-        if let Identifier = self.peek_kind() {
+        if self.peek_kind() == &Identifier || self.peek_kind() == &Fun {
             ty = Some(self.parse_type()?);
         }
 

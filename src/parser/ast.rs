@@ -103,7 +103,7 @@ pub struct VariableDecl {
     pub ty: Option<Type>,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Type {
     Ident(String),
 }
