@@ -128,3 +128,37 @@ calc :: fun (~x: Int, and y: Int) -> fun (Int) -> Int {
 
 calc(x, and: y);
 ```
+
+## Memory Management
+
+MMM pitfalls:
+- use after free
+- double free
+- leaked memory (never freed)
+
+MOJO-style:
+arguments can be:
+- read  (&)
+- mut   (&mut)
+- owned ()
+  - ^ (ends lifetime)
+  - without ^ (copies if Copy)
+  - newly-reated value (literal, function call, etc.)
+
+fun (mut x: Foo, read y: Bar): {}
+
+
+
+type Person {
+  @age: Int,
+  @name: String,
+  ---
+  Developer,
+  Other(String),
+  NoJob,
+};
+
+me :: Person.Developer {
+  age = 20,
+  name = "Kiah",
+};

@@ -2,98 +2,310 @@
 
 # variable declarations:
 
-x :: 4; # immutable
-y := 8; # mutable
+x :: 4 # immutable
+y := 8 # mutable
 
 # you can also specify the type
-my_unit : Unit : unit;
-my_bool : Bool = false;
+my_unit : Unit : unit
+my_bool : Bool = false
 
 # definition and initialization can also be separate:
-my_var : 8;
-my_var = 7;
-#      ^ this hints that mutability as a concepts exists on a per-instantiation
-#        basis, which is a concept that comes up in other places in Lovely
+my_var : Int
+my_var = 7
+
+# block expressions are just like block expressions in rust!
+# the entire expression gets the value of the last expression statement
+foo :: {
+  x :: 4
+  y :: 8
+  x + y
+}
+# ^ foo <- 12
 
 # functions are just expressions and are assigned to variables as such
-add :: fun (~first: Int, to second: Int) Int {
-  first + second # leave off the semicolon to not discard the result of an expression statement
-};
+# format looks like fun (<params>) -> <return_type>: <expr>
+add :: fun (~first: Int, to second: Int) -> Int: first + second
 
-add(3, to: 7);
+# <expr> can be a block expression, in which case it looks like a function
+# from other languages: fun (<params>) -> <return_type>: { <body> }
+add_with_block :: fun(~first: Int, to second: Int) -> Int: {
+  first + second
+}
+
+# parameters use this syntax: <callsite_name> <implementation_name>: <type>
+# inside the function body, you use <implementation_name>, but at the callsite
+# you use <callsite_name> as the label.
+# if you want to use the same name in both places, just leave off <callsite_name>.
+# if you don't want to label the argument at the callsite, use `~`:
+# ~<implementation_name>: <type>
+
+add(3, to: 7)
+add_with_block(3, to: 7)
 
 # user defined types:
 
 # regular enum
 type Foo {
-  Bar,
-  Baz,
-};
+  @Bar,
+  @Baz,
+}
 
 # enum with an attribute
 type Foo {
-  # this resembles a declaration: `data : Int;`
-  @data : Int;
+  @Bar,
+  @Baz,
 
-  Bar,
-  Baz,
-};
+  data: Int,
+}
 
 # enum with associated values and attributes
 type Animal {
-  @can_bite : Bool;
-  @name : String;
-
-  Cat,
-  Dog({
-    @breed : String;
+  @Cat,
+  @Dog({
+    breed: String,
   }),
-  Fish,
-};
+  @Fish,
+
+  can_bite: Bool,
+  name: String,
+}
 
 # instantiating enums:
-my_foo :: Foo.Bar { data : 8 };
-my_animal :: Animal.Dog({ breed : "lab" }) {
-  can_bite : true,
-  name : "Steve",
-};
+my_foo :: Foo.Bar { data = 8 }
+my_animal :: Animal.Dog({ breed = "lab" }) {
+  can_bite = true,
+  name = "Steve",
+}
+cat_1 := Animal.Cat { can_bite = true, name = "Cement" }
 
 # attributes can have default values
 type Foo {
-  @data : Int = 10;
-  @inferred_data := 10;
-};
+  data: Int = 10,
+}
 
 # they can also have constant default values
 # these values cannot be changed by any instance of the type
 type Foo {
-  @data : Int : 10;
-  @inferred_data :: 10;
+  constant_default :: 10,
 
   # methods are just constant default values
-  @method :: fun () {};
-};
+  method :: fun () {},
+}
 
 # if no variants are specified, you get one for free called `Default`
 # this ends up behaving similarily to structs in other languages
 type Bar {
-  @data : Int;
-  @data_default : Int = 10;
-  @inferred_default := 10;
-  @const_data : Int : 10;
-  @const_inferred :: 10;
-  @method :: fun () {};
-};
+  data: Int;
+  data_default: Int = 10;
+  const_data :: 10;
+  method :: fun () {};
+}
 
 # default attributes don't need to be specified, and you also
 # can leave off the `.Default` because it's the only variant
-my_bar :: Bar { data : 10 };
+my_bar :: Bar { data = 10 }
 
-# use `=` for mutable fields
-my_mut_bar := Bar { data = 10 };
+# access attribute or call a method using `.`
+my_bar.method()
 
-# access data or call a method using `.@`
-my_bar.@method();
+# if expressions look like if <condition>: <expr>
+# they return the type of <expr> if followed by an else
+# otherwise if there's no else, they become Option(typeof expr)
 
-# you can use mutable and immutable fields in the same instantiation of a type
-my_other_bar := Bar { data : 10, data_default = 5 };
+x :: if y > 0: "hi" else: "bye" # x is of type String
+x :: if y > 0: "hi" # x is of type Option(String)
+
+# while loops look just like if statements: while <condition>: expr
+while 5 > 3: do_something()
+
+# for loops look like for <item> in <iterator>: <expr>
+for num in 0..5: print(item)
+
+# loop loops just look like loop: <epxr>
+loop: print("hi")
+
+# only loop loops can break with a value: `break <expr>`, but all loops
+# have break expressions that just return unit by default
+
+# in Lovely, every user-defined type is an enum, but enums can have
+# fields, which can give them struct-like behavior. this means that
+# there's no clear distinction in Lovely between product and sum types,
+# and types can have properties of both
+
+type Worker {
+  @Developer,
+  @NoJob,
+  @Other(String),
+
+  name: String,
+  age: Int,
+}
+
+# constructing a worker:
+me :: Worker@Developer {
+  name = "Kiah",
+  age = 20,
+}
+my_brother :: Worker@Other("home builder") {
+  name = "Ezra",
+  age = 23,
+}
+
+# types can also have constant values including functions (methods)
+
+type Penguin {
+  $Emperor, # <- `$` means Emperor is the default variant
+  @LittleBlue,
+  @King,
+  @Chinstrap,
+  @Adele,
+
+  swim :: fun (self): print("sploosh"),
+  is_friendly :: true,
+}
+
+lil_blue :: Penguin@LittleBlue
+lil_blue.swim() # -> "sploosh"
+lil_blue.is_friendly # -> true
+
+emperor :: Penguin$ # makes an Emperor penguin, since Emperor was marked with `$`
+
+# if you don't specify any variants for your type, you get one for free
+# called `$Default`, which, because it uses `$`, is the default variant:
+
+type Creature {
+  can_bite: Bool,
+  weight_in_kg: Int,
+}
+
+scary_creature :: Creature$ {
+  can_bite = true,
+  weight_in_kg = 200,
+}
+
+# fields can have default values as well:
+type Person {
+  name: String,
+  age: Int,
+  num_eyes: Int = 2,
+}
+
+me :: Person$ {
+  name = "Kiah",
+  age = 20,
+}
+blackbeard :: Person$ {
+  name = "blackbeard",
+  age = 40,
+  num_eyes = 1,
+}
+
+# you can nest types:
+type Foo {
+  bar: Bar,
+
+  type Bar {
+    baz: Int
+  }
+}
+bar :: Foo.Bar { baz = 8 }
+
+# generics don't need to be declared like in many languages
+# they start with a ' and are lowercase
+identity :: fun (~x: 'a) -> 'a: x
+
+identity(4) # -> 4
+
+# protocols are like protocols in Swift, or traits in Rust
+# to demonstrate them, we'll use this functional list example
+type List('a) {
+  @Empty,
+  @Cons({
+    head: 'a,
+    tail: *List('a),
+  })
+}
+
+proto Iterator('a) { 
+  type Item
+
+  next: fun (mut self) -> Item,
+}
+
+impl Iterator(List('a)) {
+  type Item 'a
+
+  next = fun (mut self) -> Option(Item): {
+    match self {
+      @Empty: None,
+      @Cons({ head, tail }): {
+        self = tail
+        head
+      },
+    }
+  },
+}
+
+# optionals
+weird_fn :: fun (~x: Int) -> Option(Int): {
+  if x > 8: Some(x * x) else: None
+}
+
+# errors
+might_error :: fun (~x: Int) -> Result(Int, String): {
+  if x > 8: Ok(x * x) else: Err("whoops too small")
+}
+
+# modules
+# just like in rust, but with `.` instead of `::`
+use Syntax.{
+  List.{Foo, Bar},
+  might_error,
+}
+
+# ownership
+# Lovely is memory safe!
+# To pull this off, it uses a Rust/Mojo-inspired ownership model.
+# Every value is owned by exactly one variable at a time, but can be
+# accessed and even mutated by passing it along by reference, as long
+# as the reference doesn't outlive the variable that owns the value.
+# Variables are destroyed by Lovely when they go out of scope.
+
+# function parameters are prefixed with one of the following three options:
+# - read: (the default value, if you leave off the prefix, this is used)
+#         an immutable reference to a value (& in Rust)
+# - mut: a mutable reference to a value (&mut in Rust)
+# - owned: an owned value (the default in Rust)
+
+example_function :: fun (read ~x: String, mut ~y: Int, take ~z: Bool): unit
+
+x :: "foo"
+y := 89 # y has to be mutable, or it can't be passed as a mutable reference
+z :: true
+example_function(x, y, give z)
+# z can't be used here because it was consumed by the function
+
+# for owned arguments, just like in Mojo, there are three cases:
+# - you pass in a variable prefixed with `give`, which ends the lifetime of that variable moves it into the scope of the function
+# - you don't use `give`, which will copy the variable over if it implements the `Copiable` protocol, otherwise it will be a compiler error
+# - passing a newly-created value, like a literal or the result of a function call
+
+# variables are allocated and deallocated by the compilier
+
+# unsafe blocks
+# just block expressions prepended with the `unsafe` keywords that allow unsafe operations
+unsafe {
+  2 + 2 # just an example, this obviously isn't unsafe
+}
+
+# raw pointers
+
+x := 8
+xp : *Int : &x
+consumes(give x) # x dies, so xp is pointing to garbage
+
+# unsafe blocks are required for pointer dereferencing, but not for pointer creation
+unsafe {
+  print(*xp)
+  *xp = 30 # pointer derefs are valid lvalues
+}
