@@ -410,7 +410,13 @@ impl<'src> Parser<'src> {
                 let (name, _) = self.expect_ident()?;
                 self.expect_token(Colon)?;
                 let ty = self.parse_type()?;
-                Ok(FunctionParameter::UnlabeledAtCallsite { modifier, name, ty })
+                Ok(FunctionParameter {
+                    modifier,
+                    internal_name: name,
+                    ty,
+                    labeled_at_callsite: false,
+                    external_name: None,
+                })
             }
             Identifier => {
                 let (first, _) = self.expect_ident()?;
@@ -421,7 +427,7 @@ impl<'src> Parser<'src> {
                 }
                 self.expect_token(Colon)?;
                 let ty = self.parse_type()?;
-                Ok(FunctionParameter::LabeledAtCallsite {
+                Ok(FunctionParameter {
                     modifier,
                     internal_name: if let Some(second_ident) = &second {
                         second_ident.to_string()
@@ -430,6 +436,7 @@ impl<'src> Parser<'src> {
                     },
                     external_name: if second.is_some() { Some(first) } else { None },
                     ty,
+                    labeled_at_callsite: true,
                 })
             }
             tok => Err(Error::expected("parameter name", &tok.to_string())),

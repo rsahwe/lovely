@@ -19,15 +19,18 @@ Program(
                     },
                     kind: Function {
                         parameters: [
-                            UnlabeledAtCallsite {
+                            FunctionParameter {
                                 modifier: Read,
-                                name: "x",
+                                labeled_at_callsite: false,
+                                internal_name: "x",
+                                external_name: None,
                                 ty: Ident(
                                     "Int",
                                 ),
                             },
-                            LabeledAtCallsite {
+                            FunctionParameter {
                                 modifier: Read,
+                                labeled_at_callsite: true,
                                 internal_name: "y",
                                 external_name: Some(
                                     "to",
@@ -78,10 +81,58 @@ Program(
         Expression {
             span: Span {
                 start: 47,
-                end: 50,
+                end: 65,
+            },
+            kind: VariableDecl {
+                name: "x",
+                value: Expression {
+                    span: Span {
+                        start: 52,
+                        end: 65,
+                    },
+                    kind: FunctionCall {
+                        name: "add",
+                        arguments: [
+                            FunctionArgument {
+                                label: None,
+                                value: Expression {
+                                    span: Span {
+                                        start: 56,
+                                        end: 57,
+                                    },
+                                    kind: IntLiteral(
+                                        4,
+                                    ),
+                                },
+                            },
+                            FunctionArgument {
+                                label: Some(
+                                    "to",
+                                ),
+                                value: Expression {
+                                    span: Span {
+                                        start: 63,
+                                        end: 64,
+                                    },
+                                    kind: IntLiteral(
+                                        9,
+                                    ),
+                                },
+                            },
+                        ],
+                    },
+                },
+                mutable: false,
+                ty: None,
+            },
+        },
+        Expression {
+            span: Span {
+                start: 67,
+                end: 68,
             },
             kind: Ident(
-                "add",
+                "x",
             ),
         },
     ],

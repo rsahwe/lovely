@@ -1,11 +1,8 @@
 #![allow(dead_code)]
 
-use types::{FunctionParameterType, FunctionParameterTypeKind, ScopedType, TypeKind};
-use vars::{BorrowStatus, ScopedVariable};
-
 use crate::{
     parser::ast::{
-        Expression, ExpressionKind, FunctionParameter,
+        Expression, ExpressionKind,
         InfixOperator::{self, *},
         ParameterModifier,
         PrefixOperator::{self, *},
@@ -13,11 +10,15 @@ use crate::{
     },
     span::Span,
 };
+use error::Error;
+use types::{FunctionParameterType, FunctionParameterTypeKind, ScopedType, TypeKind};
+use vars::{BorrowStatus, ScopedVariable};
 
+mod error;
 mod types;
 mod vars;
 
-pub type TypeId = usize;
+type TypeId = usize;
 type VariableId = usize;
 
 const INT_ID: usize = 0;
@@ -36,40 +37,6 @@ pub struct Checker {
     types: Vec<ScopedType>,
     variables: Vec<ScopedVariable>,
     type_errors: Vec<Error>,
-}
-
-#[derive(Debug)]
-struct Error {
-    span: Span,
-    kind: ErrorKind,
-}
-#[derive(Debug)]
-enum ErrorKind {
-    TypeMismatch { expected: TypeId, got: TypeId },
-    VariableNotFound { name: String },
-    TypeNotFound { ty: Type },
-}
-impl Error {
-    fn type_mismatch(expected: TypeId, got: TypeId, span: Span) -> Error {
-        Error {
-            span,
-            kind: ErrorKind::TypeMismatch { expected, got },
-        }
-    }
-    fn variable_not_found(name: &str, span: Span) -> Error {
-        Error {
-            span,
-            kind: ErrorKind::VariableNotFound {
-                name: name.to_string(),
-            },
-        }
-    }
-    fn type_not_found(ty: Type, span: Span) -> Error {
-        Error {
-            span,
-            kind: ErrorKind::TypeNotFound { ty },
-        }
-    }
 }
 
 impl Checker {
@@ -328,61 +295,32 @@ impl Checker {
             } => {
                 // create a new scope
                 let new_scope = self.create_scope(Some(self.cur_scope));
+                let original_scope = self.cur_scope;
                 self.cur_scope = new_scope;
 
                 let mut checked_params = vec![];
 
                 // add params as local variables in said scope
                 for param in parameters {
-                    match param {
-                        FunctionParameter::LabeledAtCallsite {
-                            modifier,
-                            internal_name,
-                            external_name,
-                            ty,
-                        } => {
-                            if let Some(type_id) = self.lookup_type(ty, self.cur_scope) {
-                                checked_params.push(CheckedFunctionParameter::LabeledAtCallsite {
-                                    modifier: *modifier,
-                                    internal_name: internal_name.clone(),
-                                    external_name: external_name.clone(),
-                                    type_id,
-                                });
-                                self.add_variable(
-                                    internal_name,
-                                    type_id,
-                                    match modifier {
-                                        ParameterModifier::Read => BorrowStatus::ImmutablyBorrowed,
-                                        ParameterModifier::Mut => BorrowStatus::MutablyBorrowed,
-                                        ParameterModifier::Take => BorrowStatus::ImmutableOwned,
-                                    },
-                                );
-                            } else {
-                                return Err(Error::type_not_found(ty.clone(), expr.span));
-                            }
-                        }
-                        FunctionParameter::UnlabeledAtCallsite { modifier, name, ty } => {
-                            if let Some(type_id) = self.lookup_type(ty, self.cur_scope) {
-                                checked_params.push(
-                                    CheckedFunctionParameter::UnlabeledAtCallsite {
-                                        modifier: *modifier,
-                                        name: name.clone(),
-                                        type_id,
-                                    },
-                                );
-                                self.add_variable(
-                                    name,
-                                    type_id,
-                                    match modifier {
-                                        ParameterModifier::Read => BorrowStatus::ImmutablyBorrowed,
-                                        ParameterModifier::Mut => BorrowStatus::MutablyBorrowed,
-                                        ParameterModifier::Take => BorrowStatus::ImmutableOwned,
-                                    },
-                                );
-                            } else {
-                                return Err(Error::type_not_found(ty.clone(), expr.span));
-                            }
-                        }
+                    if let Some(type_id) = self.lookup_type(&param.ty, self.cur_scope) {
+                        checked_params.push(CheckedFunctionParameter {
+                            modifier: param.modifier,
+                            internal_name: param.internal_name.clone(),
+                            external_name: param.external_name.clone(),
+                            labeled_at_callsite: param.labeled_at_callsite,
+                            type_id,
+                        });
+                        self.add_variable(
+                            &param.internal_name,
+                            type_id,
+                            match param.modifier {
+                                ParameterModifier::Read => BorrowStatus::ImmutablyBorrowed,
+                                ParameterModifier::Mut => BorrowStatus::MutablyBorrowed,
+                                ParameterModifier::Take => BorrowStatus::ImmutableOwned,
+                            },
+                        );
+                    } else {
+                        return Err(Error::type_not_found(param.ty.clone(), expr.span));
                     }
                 }
 
@@ -398,36 +336,23 @@ impl Checker {
 
                 let body = self.check_expression(body, Some(return_type_id))?;
 
-                // TODO: refactor this
-                // super ugly and uses .clone() twice
                 let ty = self.add_type(TypeKind::Function {
                     parameters: checked_params
                         .iter()
                         .map(|p| FunctionParameterType {
-                            kind: match &p {
-                                CheckedFunctionParameter::LabeledAtCallsite {
-                                    modifier, ..
-                                }
-                                | CheckedFunctionParameter::UnlabeledAtCallsite {
-                                    modifier, ..
-                                } => match modifier {
-                                    ParameterModifier::Read => {
-                                        FunctionParameterTypeKind::ReadOnlyRef
-                                    }
-                                    ParameterModifier::Mut => FunctionParameterTypeKind::MutableRef,
-                                    ParameterModifier::Take => FunctionParameterTypeKind::Owned,
-                                },
+                            kind: match p.modifier {
+                                ParameterModifier::Read => FunctionParameterTypeKind::ReadOnlyRef,
+                                ParameterModifier::Mut => FunctionParameterTypeKind::MutableRef,
+                                ParameterModifier::Take => FunctionParameterTypeKind::Owned,
                             },
-                            ty: match &p {
-                                CheckedFunctionParameter::LabeledAtCallsite { type_id, .. }
-                                | CheckedFunctionParameter::UnlabeledAtCallsite {
-                                    type_id, ..
-                                } => self.types[*type_id].clone(),
-                            },
+                            callsite_label: p.external_name.clone(),
+                            ty: p.type_id,
                         })
                         .collect(),
-                    return_type: Box::new(self.types[return_type_id].clone()),
+                    return_type: return_type_id,
                 });
+
+                self.cur_scope = original_scope;
 
                 self.typed_expression(
                     CheckedExpressionData::Function {
@@ -440,7 +365,55 @@ impl Checker {
                     type_hint,
                 )
             }
-            ExpressionKind::FunctionCall { .. } => todo!(),
+            ExpressionKind::FunctionCall { name, arguments } => {
+                let mut args = vec![];
+
+                let Some((_, type_id)) = self.lookup_variable(name, self.cur_scope) else {
+                    return Err(Error::variable_not_found(name, expr.span));
+                };
+                let ScopedType {
+                    scope_id: _,
+                    kind:
+                        TypeKind::Function {
+                            parameters,
+                            return_type,
+                        },
+                } = &self.types[type_id].clone()
+                else {
+                    return Err(Error::variable_is_not_a_function(name, expr.span));
+                };
+
+                let num_params = parameters.len();
+                let num_args = arguments.len();
+                if num_params != num_args {
+                    return Err(Error::incorrect_arg_count(num_params, num_args, expr.span));
+                }
+
+                for (param, arg) in parameters.clone().iter().zip(arguments) {
+                    if param.callsite_label != arg.label {
+                        return Err(Error::incorrect_arg_label(
+                            param.callsite_label.clone().unwrap(),
+                            arg.label.clone().unwrap(),
+                            expr.span,
+                        ));
+                    }
+                    let checked_arg_expr = self.check_expression(&arg.value, Some(param.ty))?;
+                    args.push(CheckedFunctionArgument {
+                        label: arg.label.clone(),
+                        value: checked_arg_expr,
+                    })
+                }
+
+                self.typed_expression(
+                    CheckedExpressionData::FunctionCall {
+                        name: name.to_string(),
+                        arguments: args,
+                    },
+                    expr.span,
+                    *return_type,
+                    type_hint,
+                )
+            }
         }
     }
 
@@ -513,19 +486,24 @@ enum CheckedExpressionData {
         return_type: TypeId,
         body: Box<CheckedExpression>,
     },
+
+    FunctionCall {
+        name: String,
+        arguments: Vec<CheckedFunctionArgument>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum CheckedFunctionParameter {
-    LabeledAtCallsite {
-        modifier: ParameterModifier,
-        internal_name: String,
-        external_name: Option<String>,
-        type_id: TypeId,
-    },
-    UnlabeledAtCallsite {
-        modifier: ParameterModifier,
-        name: String,
-        type_id: TypeId,
-    },
+struct CheckedFunctionArgument {
+    label: Option<String>,
+    value: CheckedExpression,
+}
+
+#[derive(PartialEq, Eq, Debug)]
+struct CheckedFunctionParameter {
+    modifier: ParameterModifier,
+    labeled_at_callsite: bool,
+    internal_name: String,
+    external_name: Option<String>,
+    type_id: TypeId,
 }

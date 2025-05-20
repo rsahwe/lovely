@@ -1,6 +1,6 @@
-use super::ScopeId;
+use super::{ScopeId, TypeId};
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct ScopedType {
     pub kind: TypeKind,
     pub scope_id: ScopeId,
@@ -15,22 +15,23 @@ impl ScopedType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum TypeKind {
     Name(String),
     Function {
         parameters: Vec<FunctionParameterType>,
-        return_type: Box<ScopedType>,
+        return_type: TypeId,
     },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct FunctionParameterType {
     pub kind: FunctionParameterTypeKind,
-    pub ty: ScopedType,
+    pub callsite_label: Option<String>,
+    pub ty: TypeId,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum FunctionParameterTypeKind {
     Owned,
     ReadOnlyRef,

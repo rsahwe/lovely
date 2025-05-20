@@ -155,7 +155,84 @@ input_file: src/tests/source_files/functions.lv
         kind: Identifier,
         span: Span {
             start: 47,
+            end: 48,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 49,
             end: 50,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 50,
+            end: 51,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 52,
+            end: 55,
+        },
+    },
+    Token {
+        kind: LParen,
+        span: Span {
+            start: 55,
+            end: 56,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 56,
+            end: 57,
+        },
+    },
+    Token {
+        kind: Comma,
+        span: Span {
+            start: 57,
+            end: 58,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 59,
+            end: 61,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 61,
+            end: 62,
+        },
+    },
+    Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 63,
+            end: 64,
+        },
+    },
+    Token {
+        kind: RParen,
+        span: Span {
+            start: 64,
+            end: 65,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 67,
+            end: 68,
         },
     },
 ]
