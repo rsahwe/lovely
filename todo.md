@@ -8,5 +8,4 @@
 - [ ] error handling
 
 # infra
-- [ ] snapshot testing for parser
-- [ ] test some type errors in checker/mod.rs, e.g. `3 + true`
+- [x] snapshot testing

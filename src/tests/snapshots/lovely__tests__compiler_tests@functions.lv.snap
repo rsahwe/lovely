@@ -1,0 +1,161 @@
+---
+source: src/tests/mod.rs
+expression: tokens
+input_file: src/tests/source_files/functions.lv
+---
+[
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 0,
+            end: 3,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 4,
+            end: 5,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 5,
+            end: 6,
+        },
+    },
+    Token {
+        kind: Fun,
+        span: Span {
+            start: 7,
+            end: 10,
+        },
+    },
+    Token {
+        kind: LParen,
+        span: Span {
+            start: 11,
+            end: 12,
+        },
+    },
+    Token {
+        kind: Tilde,
+        span: Span {
+            start: 12,
+            end: 13,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 13,
+            end: 14,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 14,
+            end: 15,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 16,
+            end: 19,
+        },
+    },
+    Token {
+        kind: Comma,
+        span: Span {
+            start: 19,
+            end: 20,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 21,
+            end: 23,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 24,
+            end: 25,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 25,
+            end: 26,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 27,
+            end: 30,
+        },
+    },
+    Token {
+        kind: RParen,
+        span: Span {
+            start: 30,
+            end: 31,
+        },
+    },
+    Token {
+        kind: RArrow,
+        span: Span {
+            start: 32,
+            end: 34,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 35,
+            end: 38,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 38,
+            end: 39,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 40,
+            end: 41,
+        },
+    },
+    Token {
+        kind: Plus,
+        span: Span {
+            start: 42,
+            end: 43,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 44,
+            end: 45,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 47,
+            end: 50,
+        },
+    },
+]

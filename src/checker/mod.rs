@@ -1,17 +1,21 @@
 #![allow(dead_code)]
 
+use types::{FunctionParameterType, FunctionParameterTypeKind, ScopedType, TypeKind};
+use vars::{BorrowStatus, ScopedVariable};
+
 use crate::{
     parser::ast::{
-        Expression, ExpressionKind,
+        Expression, ExpressionKind, FunctionParameter,
         InfixOperator::{self, *},
+        ParameterModifier,
         PrefixOperator::{self, *},
         Program, Type,
     },
     span::Span,
 };
-use scopes::{Scope, ScopeId, ScopedType, ScopedVariable, TypeKind};
 
-mod scopes;
+mod types;
+mod vars;
 
 pub type TypeId = usize;
 type VariableId = usize;
@@ -19,6 +23,12 @@ type VariableId = usize;
 const INT_ID: usize = 0;
 const BOOL_ID: usize = 1;
 const UNIT_ID: usize = 2;
+
+pub type ScopeId = usize;
+
+pub struct Scope {
+    pub parent_scope: Option<ScopeId>,
+}
 
 pub struct Checker {
     cur_scope: ScopeId,
@@ -100,11 +110,16 @@ impl Checker {
         }
     }
 
-    fn check_variable_name(
-        &self,
-        var_name: &str,
-        scope_id: ScopeId,
-    ) -> Option<(VariableId, TypeId)> {
+    fn add_type(&mut self, kind: TypeKind) -> TypeId {
+        let type_id = self.types.len();
+        self.types.push(ScopedType {
+            kind,
+            scope_id: self.cur_scope,
+        });
+        type_id
+    }
+
+    fn lookup_variable(&self, var_name: &str, scope_id: ScopeId) -> Option<(VariableId, TypeId)> {
         let cur_scope = &self.scopes[scope_id];
         if let Some((index, variable)) = self
             .variables
@@ -114,16 +129,25 @@ impl Checker {
         {
             Some((index, variable.type_id))
         } else if let Some(parent_id) = cur_scope.parent_scope {
-            self.check_variable_name(var_name, parent_id)
+            self.lookup_variable(var_name, parent_id)
         } else {
             None
         }
     }
 
-    fn add_variable(&mut self, var_name: &str, var_type: TypeId) -> VariableId {
+    fn add_variable(
+        &mut self,
+        var_name: &str,
+        var_type: TypeId,
+        borrow_status: BorrowStatus,
+    ) -> VariableId {
         let variable_id = self.variables.len();
-        self.variables
-            .push(ScopedVariable::new(var_name, self.cur_scope, var_type));
+        self.variables.push(ScopedVariable::new(
+            var_name,
+            self.cur_scope,
+            var_type,
+            borrow_status,
+        ));
         variable_id
     }
 
@@ -261,7 +285,15 @@ impl Checker {
                 } else {
                     self.check_expression(value, None)?
                 };
-                let id = self.add_variable(name, r_value.type_id);
+                let id = self.add_variable(
+                    name,
+                    r_value.type_id,
+                    if *mutable {
+                        BorrowStatus::MutablyOwned
+                    } else {
+                        BorrowStatus::ImmutableOwned
+                    },
+                );
                 self.typed_expression(
                     CheckedExpressionData::VariableDecl {
                         name: name.to_string(),
@@ -275,7 +307,7 @@ impl Checker {
                 )
             }
             ExpressionKind::Ident(name) => {
-                if let Some((var_id, var_type)) = self.check_variable_name(name, self.cur_scope) {
+                if let Some((var_id, var_type)) = self.lookup_variable(name, self.cur_scope) {
                     self.typed_expression(
                         CheckedExpressionData::Ident {
                             name: name.to_string(),
@@ -289,76 +321,125 @@ impl Checker {
                     Err(Error::variable_not_found(name, expr.span))
                 }
             }
-            ExpressionKind::Function { .. } => todo!(),
-            // ExpressionKind::Function {
-            //     parameters,
-            //     return_type,
-            //     body,
-            // } => {
-            //     // create a new scope
-            //     let new_scope = self.create_scope(Some(self.cur_scope));
-            //     self.cur_scope = new_scope;
-            //
-            //     let mut checked_params = vec![];
-            //
-            //     // add params as local variables in said scope
-            //     for param in parameters {
-            //         match param {
-            //             FunctionParameter::LabeledAtCallsite {
-            //                 internal_name,
-            //                 external_name,
-            //                 ty,
-            //             } => {
-            //                 if let Some(type_id) = self.lookup_type(ty, self.cur_scope) {
-            //                     checked_params.push(CheckedFunctionParameter::LabeledAtCallsite {
-            //                         internal_name: internal_name.clone(),
-            //                         external_name: external_name.clone(),
-            //                         type_id,
-            //                     });
-            //                     self.add_variable(internal_name, type_id);
-            //                 } else {
-            //                     return Err(Error::type_not_found(ty.clone(), expr.span));
-            //                 }
-            //             }
-            //             FunctionParameter::UnlabeledAtCallsite { name, ty } => {
-            //                 if let Some(type_id) = self.lookup_type(ty, self.cur_scope) {
-            //                     checked_params.push(
-            //                         CheckedFunctionParameter::UnlabeledAtCallsite {
-            //                             name: name.clone(),
-            //                             type_id,
-            //                         },
-            //                     );
-            //                     self.add_variable(name, type_id);
-            //                 } else {
-            //                     return Err(Error::type_not_found(ty.clone(), expr.span));
-            //                 }
-            //             }
-            //         }
-            //     }
-            //
-            //     // get return type
-            //     let return_type = if let Some(ty) = return_type {
-            //         ty
-            //     } else {
-            //         &Type::Ident("Unit".to_string())
-            //     };
-            //     let Some(return_type_id) = self.lookup_type(return_type, self.cur_scope) else {
-            //         return Err(Error::type_not_found(return_type.clone(), expr.span));
-            //     };
-            //
-            //     let body = self.check_expression(&body, Some(return_type_id))?;
-            //
-            //     self.typed_expression(
-            //         CheckedExpressionData::Function {
-            //             parameters: checked_params,
-            //             return_type: return_type_id,
-            //             body,
-            //         },
-            //         expr.span,
-            //         todo!("function types"),
-            //         type_hint,
-            //     )
-            // }
+            ExpressionKind::Function {
+                parameters,
+                return_type,
+                body,
+            } => {
+                // create a new scope
+                let new_scope = self.create_scope(Some(self.cur_scope));
+                self.cur_scope = new_scope;
+
+                let mut checked_params = vec![];
+
+                // add params as local variables in said scope
+                for param in parameters {
+                    match param {
+                        FunctionParameter::LabeledAtCallsite {
+                            modifier,
+                            internal_name,
+                            external_name,
+                            ty,
+                        } => {
+                            if let Some(type_id) = self.lookup_type(ty, self.cur_scope) {
+                                checked_params.push(CheckedFunctionParameter::LabeledAtCallsite {
+                                    modifier: *modifier,
+                                    internal_name: internal_name.clone(),
+                                    external_name: external_name.clone(),
+                                    type_id,
+                                });
+                                self.add_variable(
+                                    internal_name,
+                                    type_id,
+                                    match modifier {
+                                        ParameterModifier::Read => BorrowStatus::ImmutablyBorrowed,
+                                        ParameterModifier::Mut => BorrowStatus::MutablyBorrowed,
+                                        ParameterModifier::Take => BorrowStatus::ImmutableOwned,
+                                    },
+                                );
+                            } else {
+                                return Err(Error::type_not_found(ty.clone(), expr.span));
+                            }
+                        }
+                        FunctionParameter::UnlabeledAtCallsite { modifier, name, ty } => {
+                            if let Some(type_id) = self.lookup_type(ty, self.cur_scope) {
+                                checked_params.push(
+                                    CheckedFunctionParameter::UnlabeledAtCallsite {
+                                        modifier: *modifier,
+                                        name: name.clone(),
+                                        type_id,
+                                    },
+                                );
+                                self.add_variable(
+                                    name,
+                                    type_id,
+                                    match modifier {
+                                        ParameterModifier::Read => BorrowStatus::ImmutablyBorrowed,
+                                        ParameterModifier::Mut => BorrowStatus::MutablyBorrowed,
+                                        ParameterModifier::Take => BorrowStatus::ImmutableOwned,
+                                    },
+                                );
+                            } else {
+                                return Err(Error::type_not_found(ty.clone(), expr.span));
+                            }
+                        }
+                    }
+                }
+
+                // get return type
+                let return_type = if let Some(ty) = return_type {
+                    ty
+                } else {
+                    &Type::Ident("Unit".to_string())
+                };
+                let Some(return_type_id) = self.lookup_type(return_type, self.cur_scope) else {
+                    return Err(Error::type_not_found(return_type.clone(), expr.span));
+                };
+
+                let body = self.check_expression(body, Some(return_type_id))?;
+
+                // TODO: refactor this
+                // super ugly and uses .clone() twice
+                let ty = self.add_type(TypeKind::Function {
+                    parameters: checked_params
+                        .iter()
+                        .map(|p| FunctionParameterType {
+                            kind: match &p {
+                                CheckedFunctionParameter::LabeledAtCallsite {
+                                    modifier, ..
+                                }
+                                | CheckedFunctionParameter::UnlabeledAtCallsite {
+                                    modifier, ..
+                                } => match modifier {
+                                    ParameterModifier::Read => {
+                                        FunctionParameterTypeKind::ReadOnlyRef
+                                    }
+                                    ParameterModifier::Mut => FunctionParameterTypeKind::MutableRef,
+                                    ParameterModifier::Take => FunctionParameterTypeKind::Owned,
+                                },
+                            },
+                            ty: match &p {
+                                CheckedFunctionParameter::LabeledAtCallsite { type_id, .. }
+                                | CheckedFunctionParameter::UnlabeledAtCallsite {
+                                    type_id, ..
+                                } => self.types[*type_id].clone(),
+                            },
+                        })
+                        .collect(),
+                    return_type: Box::new(self.types[return_type_id].clone()),
+                });
+
+                self.typed_expression(
+                    CheckedExpressionData::Function {
+                        parameters: checked_params,
+                        return_type: return_type_id,
+                        body: Box::new(body),
+                    },
+                    expr.span,
+                    ty,
+                    type_hint,
+                )
+            }
             ExpressionKind::FunctionCall { .. } => todo!(),
         }
     }
@@ -437,11 +518,13 @@ enum CheckedExpressionData {
 #[derive(PartialEq, Eq, Debug)]
 pub enum CheckedFunctionParameter {
     LabeledAtCallsite {
+        modifier: ParameterModifier,
         internal_name: String,
         external_name: Option<String>,
         type_id: TypeId,
     },
     UnlabeledAtCallsite {
+        modifier: ParameterModifier,
         name: String,
         type_id: TypeId,
     },

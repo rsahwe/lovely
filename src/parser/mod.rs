@@ -8,8 +8,8 @@ use crate::{
     span::Span,
 };
 use ast::{
-    Expression, ExpressionKind, FunctionArgument, FunctionParameter, InfixOperator, Precedence,
-    PrefixOperator, Program, Type,
+    Expression, ExpressionKind, FunctionArgument, FunctionParameter, InfixOperator,
+    ParameterModifier, Precedence, PrefixOperator, Program, Type,
 };
 use std::iter::Peekable;
 
@@ -387,13 +387,30 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_function_parameter(&mut self) -> Result<FunctionParameter, Error> {
+        let mut modifier = ParameterModifier::Read;
+
+        match self.peek_kind() {
+            Mut => {
+                modifier = ParameterModifier::Mut;
+                self.expect_token(Mut)?;
+            }
+            Take => {
+                modifier = ParameterModifier::Take;
+                self.expect_token(Take)?;
+            }
+            Read => {
+                self.expect_token(Read)?;
+            }
+            _ => {}
+        }
+
         match self.peek_kind() {
             Tilde => {
                 self.expect_token(Tilde)?;
                 let (name, _) = self.expect_ident()?;
                 self.expect_token(Colon)?;
                 let ty = self.parse_type()?;
-                Ok(FunctionParameter::UnlabeledAtCallsite { name, ty })
+                Ok(FunctionParameter::UnlabeledAtCallsite { modifier, name, ty })
             }
             Identifier => {
                 let (first, _) = self.expect_ident()?;
@@ -405,6 +422,7 @@ impl<'src> Parser<'src> {
                 self.expect_token(Colon)?;
                 let ty = self.parse_type()?;
                 Ok(FunctionParameter::LabeledAtCallsite {
+                    modifier,
                     internal_name: if let Some(second_ident) = &second {
                         second_ident.to_string()
                     } else {

@@ -80,14 +80,23 @@ pub struct FunctionArgument {
 #[derive(PartialEq, Eq, Debug)]
 pub enum FunctionParameter {
     LabeledAtCallsite {
+        modifier: ParameterModifier,
         internal_name: String,
         external_name: Option<String>,
         ty: Type,
     },
     UnlabeledAtCallsite {
+        modifier: ParameterModifier,
         name: String,
         ty: Type,
     },
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum ParameterModifier {
+    Read,
+    Mut,
+    Take,
 }
 
 #[derive(PartialEq, Eq, Debug)]

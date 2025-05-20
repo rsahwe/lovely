@@ -1,0 +1,88 @@
+---
+source: src/tests/mod.rs
+expression: ast
+input_file: src/tests/source_files/functions.lv
+---
+Program(
+    [
+        Expression {
+            span: Span {
+                start: 0,
+                end: 45,
+            },
+            kind: VariableDecl {
+                name: "add",
+                value: Expression {
+                    span: Span {
+                        start: 7,
+                        end: 45,
+                    },
+                    kind: Function {
+                        parameters: [
+                            UnlabeledAtCallsite {
+                                modifier: Read,
+                                name: "x",
+                                ty: Ident(
+                                    "Int",
+                                ),
+                            },
+                            LabeledAtCallsite {
+                                modifier: Read,
+                                internal_name: "y",
+                                external_name: Some(
+                                    "to",
+                                ),
+                                ty: Ident(
+                                    "Int",
+                                ),
+                            },
+                        ],
+                        return_type: Some(
+                            Ident(
+                                "Int",
+                            ),
+                        ),
+                        body: Expression {
+                            span: Span {
+                                start: 40,
+                                end: 45,
+                            },
+                            kind: Infix {
+                                left: Expression {
+                                    span: Span {
+                                        start: 40,
+                                        end: 41,
+                                    },
+                                    kind: Ident(
+                                        "x",
+                                    ),
+                                },
+                                operator: Plus,
+                                right: Expression {
+                                    span: Span {
+                                        start: 44,
+                                        end: 45,
+                                    },
+                                    kind: Ident(
+                                        "y",
+                                    ),
+                                },
+                            },
+                        },
+                    },
+                },
+                mutable: false,
+                ty: None,
+            },
+        },
+        Expression {
+            span: Span {
+                start: 47,
+                end: 50,
+            },
+            kind: Ident(
+                "add",
+            ),
+        },
+    ],
+)
