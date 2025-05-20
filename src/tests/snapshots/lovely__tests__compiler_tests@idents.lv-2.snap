@@ -5,104 +5,92 @@ input_file: src/tests/source_files/idents.lv
 ---
 Program(
     [
-        ExpressionStatement {
-            expr: Expression {
-                span: Span {
-                    start: 0,
-                    end: 7,
-                },
-                kind: VariableDecl {
-                    name: "a",
-                    value: Expression {
-                        span: Span {
-                            start: 5,
-                            end: 7,
-                        },
-                        kind: IntLiteral(
-                            12,
-                        ),
-                    },
-                    mutable: true,
-                    ty: None,
-                },
+        Expression {
+            span: Span {
+                start: 0,
+                end: 7,
             },
-            discarded: true,
-        },
-        ExpressionStatement {
-            expr: Expression {
-                span: Span {
-                    start: 9,
-                    end: 15,
-                },
-                kind: VariableDecl {
-                    name: "b",
-                    value: Expression {
-                        span: Span {
-                            start: 14,
-                            end: 15,
-                        },
-                        kind: IntLiteral(
-                            9,
-                        ),
+            kind: VariableDecl {
+                name: "a",
+                value: Expression {
+                    span: Span {
+                        start: 5,
+                        end: 7,
                     },
-                    mutable: true,
-                    ty: None,
+                    kind: IntLiteral(
+                        12,
+                    ),
                 },
+                mutable: true,
+                ty: None,
             },
-            discarded: true,
         },
-        ExpressionStatement {
-            expr: Expression {
-                span: Span {
-                    start: 18,
-                    end: 28,
+        Expression {
+            span: Span {
+                start: 8,
+                end: 14,
+            },
+            kind: VariableDecl {
+                name: "b",
+                value: Expression {
+                    span: Span {
+                        start: 13,
+                        end: 14,
+                    },
+                    kind: IntLiteral(
+                        9,
+                    ),
                 },
-                kind: VariableDecl {
-                    name: "c",
-                    value: Expression {
-                        span: Span {
-                            start: 23,
-                            end: 28,
-                        },
-                        kind: Infix {
-                            left: Expression {
-                                span: Span {
-                                    start: 23,
-                                    end: 24,
-                                },
-                                kind: Ident(
-                                    "a",
-                                ),
+                mutable: true,
+                ty: None,
+            },
+        },
+        Expression {
+            span: Span {
+                start: 16,
+                end: 26,
+            },
+            kind: VariableDecl {
+                name: "c",
+                value: Expression {
+                    span: Span {
+                        start: 21,
+                        end: 26,
+                    },
+                    kind: Infix {
+                        left: Expression {
+                            span: Span {
+                                start: 21,
+                                end: 22,
                             },
-                            operator: Plus,
-                            right: Expression {
-                                span: Span {
-                                    start: 27,
-                                    end: 28,
-                                },
-                                kind: Ident(
-                                    "b",
-                                ),
+                            kind: Ident(
+                                "a",
+                            ),
+                        },
+                        operator: Plus,
+                        right: Expression {
+                            span: Span {
+                                start: 25,
+                                end: 26,
                             },
+                            kind: Ident(
+                                "b",
+                            ),
                         },
                     },
-                    mutable: true,
-                    ty: None,
                 },
+                mutable: true,
+                ty: None,
             },
-            discarded: true,
         },
-        ExpressionStatement {
-            expr: Expression {
-                span: Span {
-                    start: 31,
-                    end: 32,
-                },
-                kind: Ident(
-                    "c",
-                ),
+        Expression {
+            span: Span {
+                start: 28,
+                end: 29,
             },
-            discarded: true,
+            kind: Ident(
+                "c",
+            ),
         },
     ],
 )

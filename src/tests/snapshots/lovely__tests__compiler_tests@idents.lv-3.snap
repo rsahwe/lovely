@@ -4,76 +4,68 @@ expression: checked_program
 input_file: src/tests/source_files/idents.lv
 ---
 CheckedProgram {
-    stmts: [
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "a",
-                    value: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            12,
-                        ),
-                    },
-                    mutable: true,
-                    variable_id: 0,
+    exprs: [
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "a",
+                value: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        12,
+                    ),
                 },
+                mutable: true,
+                variable_id: 0,
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "b",
-                    value: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            9,
-                        ),
-                    },
-                    mutable: true,
-                    variable_id: 1,
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "b",
+                value: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        9,
+                    ),
                 },
+                mutable: true,
+                variable_id: 1,
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "c",
-                    value: CheckedExpression {
-                        type_id: 0,
-                        data: Infix {
-                            left: CheckedExpression {
-                                type_id: 0,
-                                data: Ident {
-                                    name: "a",
-                                    variable_id: 0,
-                                },
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "c",
+                value: CheckedExpression {
+                    type_id: 0,
+                    data: Infix {
+                        left: CheckedExpression {
+                            type_id: 0,
+                            data: Ident {
+                                name: "a",
+                                variable_id: 0,
                             },
-                            operator: Plus,
-                            right: CheckedExpression {
-                                type_id: 0,
-                                data: Ident {
-                                    name: "b",
-                                    variable_id: 1,
-                                },
+                        },
+                        operator: Plus,
+                        right: CheckedExpression {
+                            type_id: 0,
+                            data: Ident {
+                                name: "b",
+                                variable_id: 1,
                             },
                         },
                     },
-                    mutable: true,
-                    variable_id: 2,
                 },
+                mutable: true,
+                variable_id: 2,
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 0,
-                data: Ident {
-                    name: "c",
-                    variable_id: 2,
-                },
+        CheckedExpression {
+            type_id: 0,
+            data: Ident {
+                name: "c",
+                variable_id: 2,
             },
         },
     ],

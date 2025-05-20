@@ -42,72 +42,6 @@ add_with_block :: fun(~first: Int, to second: Int) -> Int: {
 add(3, to: 7)
 add_with_block(3, to: 7)
 
-# user defined types:
-
-# regular enum
-type Foo {
-  @Bar,
-  @Baz,
-}
-
-# enum with an attribute
-type Foo {
-  @Bar,
-  @Baz,
-
-  data: Int,
-}
-
-# enum with associated values and attributes
-type Animal {
-  @Cat,
-  @Dog({
-    breed: String,
-  }),
-  @Fish,
-
-  can_bite: Bool,
-  name: String,
-}
-
-# instantiating enums:
-my_foo :: Foo.Bar { data = 8 }
-my_animal :: Animal.Dog({ breed = "lab" }) {
-  can_bite = true,
-  name = "Steve",
-}
-cat_1 := Animal.Cat { can_bite = true, name = "Cement" }
-
-# attributes can have default values
-type Foo {
-  data: Int = 10,
-}
-
-# they can also have constant default values
-# these values cannot be changed by any instance of the type
-type Foo {
-  constant_default :: 10,
-
-  # methods are just constant default values
-  method :: fun () {},
-}
-
-# if no variants are specified, you get one for free called `Default`
-# this ends up behaving similarily to structs in other languages
-type Bar {
-  data: Int;
-  data_default: Int = 10;
-  const_data :: 10;
-  method :: fun () {};
-}
-
-# default attributes don't need to be specified, and you also
-# can leave off the `.Default` because it's the only variant
-my_bar :: Bar { data = 10 }
-
-# access attribute or call a method using `.`
-my_bar.method()
-
 # if expressions look like if <condition>: <expr>
 # they return the type of <expr> if followed by an else
 # otherwise if there's no else, they become Option(typeof expr)
@@ -133,12 +67,12 @@ loop: print("hi")
 # and types can have properties of both
 
 type Worker {
-  @Developer,
-  @NoJob,
-  @Other(String),
+  @Developer
+  @NoJob
+  @Other(String)
 
-  name: String,
-  age: Int,
+  name: String
+  age: Int
 }
 
 # constructing a worker:
@@ -154,14 +88,14 @@ my_brother :: Worker@Other("home builder") {
 # types can also have constant values including functions (methods)
 
 type Penguin {
-  $Emperor, # <- `$` means Emperor is the default variant
-  @LittleBlue,
-  @King,
-  @Chinstrap,
-  @Adele,
+  $Emperor # <- `$` means Emperor is the default variant
+  @LittleBlue
+  @King
+  @Chinstrap
+  @Adele
 
-  swim :: fun (self): print("sploosh"),
-  is_friendly :: true,
+  swim :: fun (self): print("sploosh")
+  is_friendly :: true
 }
 
 lil_blue :: Penguin@LittleBlue
@@ -174,8 +108,8 @@ emperor :: Penguin$ # makes an Emperor penguin, since Emperor was marked with `$
 # called `$Default`, which, because it uses `$`, is the default variant:
 
 type Creature {
-  can_bite: Bool,
-  weight_in_kg: Int,
+  can_bite: Bool
+  weight_in_kg: Int
 }
 
 scary_creature :: Creature$ {
@@ -185,9 +119,9 @@ scary_creature :: Creature$ {
 
 # fields can have default values as well:
 type Person {
-  name: String,
-  age: Int,
-  num_eyes: Int = 2,
+  name: String
+  age: Int
+  num_eyes: Int = 2
 }
 
 me :: Person$ {
@@ -202,7 +136,7 @@ blackbeard :: Person$ {
 
 # you can nest types:
 type Foo {
-  bar: Bar,
+  bar: Bar
 
   type Bar {
     baz: Int
@@ -219,17 +153,17 @@ identity(4) # -> 4
 # protocols are like protocols in Swift, or traits in Rust
 # to demonstrate them, we'll use this functional list example
 type List('a) {
-  @Empty,
+  @Empty
   @Cons({
-    head: 'a,
-    tail: *List('a),
+    head: 'a
+    tail: *List('a)
   })
 }
 
 proto Iterator('a) { 
   type Item
 
-  next: fun (mut self) -> Item,
+  next: fun (mut 'a) -> Item
 }
 
 impl Iterator(List('a)) {
@@ -237,18 +171,20 @@ impl Iterator(List('a)) {
 
   next = fun (mut self) -> Option(Item): {
     match self {
-      @Empty: None,
+      @Empty: None
       @Cons({ head, tail }): {
         self = tail
         head
-      },
+      }
     }
-  },
+  }
 }
 
 # optionals
 weird_fn :: fun (~x: Int) -> Option(Int): {
   if x > 8: Some(x * x) else: None
+  # because of how if expressions work, the above line is equivalent to this:
+  # if x > 8: x * x
 }
 
 # errors

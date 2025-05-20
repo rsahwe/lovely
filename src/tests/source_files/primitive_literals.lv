@@ -1,19 +1,16 @@
 # == INTS ==
 
 # zero
-0;
-
-# negatives
--3;
+0
 
 # big numbers
-123456789;
+123456789
 
 # == BOOLS ==
 
-true;
+true
 
-false;
+false
 
 # == UNIT ==
 

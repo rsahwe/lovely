@@ -4,67 +4,59 @@ expression: checked_program
 input_file: src/tests/source_files/variable_decls.lv
 ---
 CheckedProgram {
-    stmts: [
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "foo",
-                    value: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            6,
-                        ),
-                    },
-                    mutable: false,
-                    variable_id: 0,
+    exprs: [
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "foo",
+                value: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        6,
+                    ),
                 },
+                mutable: false,
+                variable_id: 0,
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "bar",
-                    value: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            7,
-                        ),
-                    },
-                    mutable: true,
-                    variable_id: 1,
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "bar",
+                value: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        7,
+                    ),
                 },
+                mutable: true,
+                variable_id: 1,
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "baz",
-                    value: CheckedExpression {
-                        type_id: 1,
-                        data: BoolLiteral(
-                            true,
-                        ),
-                    },
-                    mutable: true,
-                    variable_id: 2,
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "baz",
+                value: CheckedExpression {
+                    type_id: 1,
+                    data: BoolLiteral(
+                        true,
+                    ),
                 },
+                mutable: true,
+                variable_id: 2,
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 2,
-                data: VariableDecl {
-                    name: "qux",
-                    value: CheckedExpression {
-                        type_id: 2,
-                        data: Unit,
-                    },
-                    mutable: false,
-                    variable_id: 3,
+        CheckedExpression {
+            type_id: 2,
+            data: VariableDecl {
+                name: "qux",
+                value: CheckedExpression {
+                    type_id: 2,
+                    data: Unit,
                 },
+                mutable: false,
+                variable_id: 3,
             },
         },
     ],

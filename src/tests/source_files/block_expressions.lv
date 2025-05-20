@@ -1,0 +1,7 @@
+x :: {
+  unit
+  true
+  7 - 4
+}
+
+y : Int : x

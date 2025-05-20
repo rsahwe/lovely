@@ -1,7 +1,7 @@
 ---
 source: src/tests/mod.rs
 expression: tokens
-input_file: src/tests/source_files/idents.lv
+input_file: src/tests/source_files/block_expressions.lv
 ---
 [
     Token {
@@ -19,94 +19,94 @@ input_file: src/tests/source_files/idents.lv
         },
     },
     Token {
-        kind: SingleEqual,
+        kind: Colon,
         span: Span {
             start: 3,
             end: 4,
         },
     },
     Token {
-        kind: IntLiteral,
+        kind: LBrace,
         span: Span {
             start: 5,
-            end: 7,
+            end: 6,
         },
     },
     Token {
-        kind: Identifier,
+        kind: Unit,
         span: Span {
-            start: 8,
-            end: 9,
+            start: 9,
+            end: 13,
         },
     },
     Token {
-        kind: Colon,
-        span: Span {
-            start: 10,
-            end: 11,
-        },
-    },
-    Token {
-        kind: SingleEqual,
-        span: Span {
-            start: 11,
-            end: 12,
-        },
-    },
-    Token {
-        kind: IntLiteral,
-        span: Span {
-            start: 13,
-            end: 14,
-        },
-    },
-    Token {
-        kind: Identifier,
+        kind: True,
         span: Span {
             start: 16,
-            end: 17,
-        },
-    },
-    Token {
-        kind: Colon,
-        span: Span {
-            start: 18,
-            end: 19,
-        },
-    },
-    Token {
-        kind: SingleEqual,
-        span: Span {
-            start: 19,
             end: 20,
         },
     },
     Token {
-        kind: Identifier,
-        span: Span {
-            start: 21,
-            end: 22,
-        },
-    },
-    Token {
-        kind: Plus,
+        kind: IntLiteral,
         span: Span {
             start: 23,
             end: 24,
         },
     },
     Token {
-        kind: Identifier,
+        kind: Minus,
         span: Span {
             start: 25,
             end: 26,
         },
     },
     Token {
+        kind: IntLiteral,
+        span: Span {
+            start: 27,
+            end: 28,
+        },
+    },
+    Token {
+        kind: RBrace,
+        span: Span {
+            start: 29,
+            end: 30,
+        },
+    },
+    Token {
         kind: Identifier,
         span: Span {
-            start: 28,
-            end: 29,
+            start: 32,
+            end: 33,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 34,
+            end: 35,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 36,
+            end: 39,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 40,
+            end: 41,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 42,
+            end: 43,
         },
     },
 ]

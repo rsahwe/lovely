@@ -4,222 +4,205 @@ expression: checked_program
 input_file: src/tests/source_files/operators.lv
 ---
 CheckedProgram {
-    stmts: [
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Prefix {
-                    operator: LogicalNot,
-                    expression: CheckedExpression {
-                        type_id: 1,
-                        data: BoolLiteral(
-                            true,
-                        ),
-                    },
+    exprs: [
+        CheckedExpression {
+            type_id: 1,
+            data: Prefix {
+                operator: LogicalNot,
+                expression: CheckedExpression {
+                    type_id: 1,
+                    data: BoolLiteral(
+                        true,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 0,
-                data: Prefix {
-                    operator: Negative,
-                    expression: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            9,
-                        ),
-                    },
-                },
-            },
-        },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 0,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: Infix {
-                            left: CheckedExpression {
+        CheckedExpression {
+            type_id: 0,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: Block(
+                        [
+                            CheckedExpression {
                                 type_id: 0,
-                                data: IntLiteral(
-                                    3,
-                                ),
-                            },
-                            operator: Minus,
-                            right: CheckedExpression {
-                                type_id: 0,
-                                data: IntLiteral(
-                                    4,
-                                ),
-                            },
-                        },
-                    },
-                    operator: Multiply,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            2,
-                        ),
-                    },
-                },
-            },
-        },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 0,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: Infix {
-                            left: CheckedExpression {
-                                type_id: 0,
-                                data: IntLiteral(
-                                    3,
-                                ),
-                            },
-                            operator: Divide,
-                            right: CheckedExpression {
-                                type_id: 0,
-                                data: Prefix {
-                                    operator: Negative,
-                                    expression: CheckedExpression {
+                                data: Infix {
+                                    left: CheckedExpression {
                                         type_id: 0,
                                         data: IntLiteral(
-                                            7,
+                                            3,
+                                        ),
+                                    },
+                                    operator: Minus,
+                                    right: CheckedExpression {
+                                        type_id: 0,
+                                        data: IntLiteral(
+                                            4,
                                         ),
                                     },
                                 },
                             },
+                        ],
+                    ),
+                },
+                operator: Multiply,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        2,
+                    ),
+                },
+            },
+        },
+        CheckedExpression {
+            type_id: 0,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: Infix {
+                        left: CheckedExpression {
+                            type_id: 0,
+                            data: Block(
+                                [
+                                    CheckedExpression {
+                                        type_id: 0,
+                                        data: Block(
+                                            [
+                                                CheckedExpression {
+                                                    type_id: 0,
+                                                    data: IntLiteral(
+                                                        3,
+                                                    ),
+                                                },
+                                            ],
+                                        ),
+                                    },
+                                ],
+                            ),
+                        },
+                        operator: Divide,
+                        right: CheckedExpression {
+                            type_id: 0,
+                            data: IntLiteral(
+                                7,
+                            ),
                         },
                     },
-                    operator: Minus,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            22,
-                        ),
-                    },
+                },
+                operator: Minus,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        22,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            3,
-                        ),
-                    },
-                    operator: LessThan,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            5,
-                        ),
-                    },
+        CheckedExpression {
+            type_id: 1,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        3,
+                    ),
+                },
+                operator: LessThan,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        5,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            6,
-                        ),
-                    },
-                    operator: GreaterThan,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            2,
-                        ),
-                    },
+        CheckedExpression {
+            type_id: 1,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        6,
+                    ),
+                },
+                operator: GreaterThan,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        2,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            3,
-                        ),
-                    },
-                    operator: LessThanOrEqual,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            5,
-                        ),
-                    },
+        CheckedExpression {
+            type_id: 1,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        3,
+                    ),
+                },
+                operator: LessThanOrEqual,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        5,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            6,
-                        ),
-                    },
-                    operator: GreaterThanOrEqual,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            2,
-                        ),
-                    },
+        CheckedExpression {
+            type_id: 1,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        6,
+                    ),
+                },
+                operator: GreaterThanOrEqual,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        2,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            3,
-                        ),
-                    },
-                    operator: Equal,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            5,
-                        ),
-                    },
+        CheckedExpression {
+            type_id: 1,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        3,
+                    ),
+                },
+                operator: Equal,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        5,
+                    ),
                 },
             },
         },
-        CheckedExpressionStatement {
-            expr: CheckedExpression {
-                type_id: 1,
-                data: Infix {
-                    left: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            3,
-                        ),
-                    },
-                    operator: NotEqual,
-                    right: CheckedExpression {
-                        type_id: 0,
-                        data: IntLiteral(
-                            5,
-                        ),
-                    },
+        CheckedExpression {
+            type_id: 1,
+            data: Infix {
+                left: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        3,
+                    ),
+                },
+                operator: NotEqual,
+                right: CheckedExpression {
+                    type_id: 0,
+                    data: IntLiteral(
+                        5,
+                    ),
                 },
             },
         },

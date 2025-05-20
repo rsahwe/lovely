@@ -25,13 +25,7 @@ pub struct ScopedType {
     pub kind: TypeKind,
     pub scope_id: ScopeId,
 }
-enum TypeKind {
-    Name(String),
-    Function {
-        parameters: Vec<ScopedType>,
-        return_type: Box<ScopedType>,
-    },
-}
+
 impl ScopedType {
     pub fn named(name: &str, scope_id: ScopeId) -> Self {
         ScopedType {
@@ -39,4 +33,23 @@ impl ScopedType {
             scope_id,
         }
     }
+}
+
+pub enum TypeKind {
+    Name(String),
+    Function {
+        parameters: Vec<FunctionParameterType>,
+        return_type: Box<ScopedType>,
+    },
+}
+
+pub struct FunctionParameterType {
+    kind: FunctionParameterTypeKind,
+    ty: ScopedType,
+}
+
+pub enum FunctionParameterTypeKind {
+    Owned,
+    ReadOnlyRef,
+    MutableRef,
 }

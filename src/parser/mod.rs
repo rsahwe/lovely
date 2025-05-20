@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::iter::Peekable;
-
 use crate::{
     lexer::{
         Lexer,
@@ -10,9 +8,10 @@ use crate::{
     span::Span,
 };
 use ast::{
-    Expression, ExpressionKind, ExpressionStatement, FunctionArgument, FunctionParameter,
-    InfixOperator, Precedence, PrefixOperator, Program, Type,
+    Expression, ExpressionKind, FunctionArgument, FunctionParameter, InfixOperator, Precedence,
+    PrefixOperator, Program, Type,
 };
+use std::iter::Peekable;
 
 pub mod ast;
 
@@ -55,24 +54,11 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse(&mut self) -> Result<Program, Error> {
-        let mut stmts = vec![];
+        let mut exprs = vec![];
         while self.lexer.peek().is_some() {
-            stmts.push(self.parse_expression_statement()?);
+            exprs.push(self.parse_expression(Precedence::Lowest)?);
         }
-        Ok(Program(stmts))
-    }
-
-    fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, Error> {
-        let expr = self.parse_expression(Precedence::Lowest)?;
-        let has_semicolon = self.check_semicolon()?;
-        if has_semicolon {
-            self.lexer.next();
-        }
-
-        Ok(ExpressionStatement {
-            expr,
-            discarded: has_semicolon,
-        })
+        Ok(Program(exprs))
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, Error> {
@@ -159,7 +145,7 @@ impl<'src> Parser<'src> {
             IntLiteral => Ok(Box::new(|parser| parser.parse_int_literal())),
             True | False => Ok(Box::new(|parser| parser.parse_bool_literal())),
             Unit => Ok(Box::new(|parser| parser.parse_unit())),
-            LParen => Ok(Box::new(|parser| parser.parse_grouped_expression())),
+            LBrace => Ok(Box::new(|parser| parser.parse_block_expression())),
             Identifier => {
                 let (name, span) = self.expect_ident()?;
                 match self.peek_kind() {
@@ -178,9 +164,6 @@ impl<'src> Parser<'src> {
             ExclamationMark => Ok(Box::new(|parser| {
                 parser.parse_prefix_expression(PrefixOperator::LogicalNot)
             })),
-            Minus => Ok(Box::new(|parser| {
-                parser.parse_prefix_expression(PrefixOperator::Negative)
-            })),
             _ => Err(Error::NoPrefixParseFn(peek_token_kind.clone())),
         }
     }
@@ -188,7 +171,6 @@ impl<'src> Parser<'src> {
     fn parse_prefix_expression(&mut self, operator: PrefixOperator) -> Result<Expression, Error> {
         let Span { start, .. } = self.expect_token(match operator {
             PrefixOperator::LogicalNot => ExclamationMark,
-            PrefixOperator::Negative => Minus,
         })?;
         let expr = self.parse_expression(Precedence::Prefix)?;
         let span = expr.span;
@@ -257,19 +239,17 @@ impl<'src> Parser<'src> {
         Ok(Type::Ident(name))
     }
 
-    fn parse_grouped_expression(&mut self) -> Result<Expression, Error> {
-        let start_position = self.expect_token(LParen)?.start;
-        let expr = self.parse_expression(Precedence::Lowest)?;
-        match self.peek_kind() {
-            RParen => {
-                let end_position = self.expect_token(RParen)?.end;
-                Ok(Expression::new(
-                    expr.kind,
-                    Span::from_range(start_position, end_position),
-                ))
-            }
-            tok => Err(Error::expected(")", &tok.to_string())),
+    fn parse_block_expression(&mut self) -> Result<Expression, Error> {
+        let start_span = self.expect_token(LBrace)?;
+        let mut exprs = vec![];
+        while self.peek_kind() != &RBrace {
+            exprs.push(self.parse_expression(Precedence::Lowest)?);
         }
+        let end_span = self.expect_token(RBrace)?;
+        Ok(Expression::new(
+            ExpressionKind::Block(exprs),
+            Span::from_range(start_span.start, end_span.end),
+        ))
     }
 
     fn parse_function_call(
@@ -386,25 +366,21 @@ impl<'src> Parser<'src> {
 
         let mut return_type = None;
 
-        if let Identifier = self.peek_kind() {
+        if let RArrow = self.peek_kind() {
+            self.expect_token(RArrow)?;
             return_type = Some(self.parse_type()?);
         }
 
-        self.expect_token(LBrace)?;
+        self.expect_token(Colon)?;
 
-        let mut body = vec![];
-
-        while self.peek_kind() != &RBrace {
-            body.push(self.parse_expression_statement()?);
-        }
-
-        let end_span = self.expect_token(RBrace)?;
+        let body = self.parse_expression(Precedence::Lowest)?;
+        let end_span = body.span;
 
         Ok(Expression::new(
             ExpressionKind::Function {
                 parameters,
                 return_type,
-                body,
+                body: Box::new(body),
             },
             Span::from_range(start_span.start, end_span.end),
         ))
@@ -440,10 +416,6 @@ impl<'src> Parser<'src> {
             }
             tok => Err(Error::expected("parameter name", &tok.to_string())),
         }
-    }
-
-    fn check_semicolon(&mut self) -> Result<bool, Error> {
-        Ok(self.peek_kind() == &Semicolon)
     }
 
     fn expect_token(&mut self, kind: TokenKind) -> Result<Span, Error> {

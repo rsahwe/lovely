@@ -5,10 +5,20 @@ use crate::span::Span;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     // keywords:
-    Fun,   // fun
-    Unit,  // unit
-    True,  // true
-    False, // false
+    Fun,    // fun
+    Take,   // take
+    Mut,    // mut
+    Read,   // read
+    Give,   // give
+    Break,  // break
+    Pass,   // pass
+    Return, // ret
+    Proto,  // proto
+    Impl,   // impl
+    Type,   // type
+    Unit,   // unit
+    True,   // true
+    False,  // false
 
     // syntax
     LParen,      // (
@@ -18,8 +28,8 @@ pub enum TokenKind {
     Colon,       // :
     Comma,       // ,
     Tilde,       // ~
-    Semicolon,   // ;
     SingleEqual, // =
+    RArrow,      // ->
 
     // operators:
     ExclamationMark,    // !
@@ -49,6 +59,16 @@ impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             TokenKind::Fun => "fun",
+            TokenKind::Take => "take",
+            TokenKind::Mut => "mut",
+            TokenKind::Read => "read",
+            TokenKind::Give => "give",
+            TokenKind::Break => "break",
+            TokenKind::Pass => "pass",
+            TokenKind::Return => "ret",
+            TokenKind::Proto => "proto",
+            TokenKind::Impl => "impl",
+            TokenKind::Type => "type",
             TokenKind::Unit => "unit",
             TokenKind::True => "true",
             TokenKind::False => "false",
@@ -59,7 +79,7 @@ impl Display for TokenKind {
             TokenKind::Colon => ":",
             TokenKind::Comma => ",",
             TokenKind::Tilde => "~",
-            TokenKind::Semicolon => ";",
+            TokenKind::RArrow => "->",
             TokenKind::SingleEqual => "=",
             TokenKind::ExclamationMark => "!",
             TokenKind::Plus => "+",

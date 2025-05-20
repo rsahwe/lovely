@@ -42,7 +42,18 @@ impl<'src> Lexer<'src> {
                 self.next_token()
             }
             '+' => self.make_single_char_token(cur_index, Plus),
-            '-' => self.make_single_char_token(cur_index, Minus),
+            '-' => {
+                self.next();
+                if self
+                    .chars
+                    .next_if(|(_, next_char)| *next_char == '>')
+                    .is_some()
+                {
+                    Token::new(RArrow, cur_index, 2)
+                } else {
+                    Token::new(Minus, cur_index, 1)
+                }
+            }
             '/' => self.make_single_char_token(cur_index, Slash),
             '*' => self.make_single_char_token(cur_index, Asterisk),
             '&' => self.make_single_char_token(cur_index, BitAnd),
@@ -103,11 +114,20 @@ impl<'src> Lexer<'src> {
             '~' => self.make_single_char_token(cur_index, Tilde),
             ':' => self.make_single_char_token(cur_index, Colon),
             ',' => self.make_single_char_token(cur_index, Comma),
-            ';' => self.make_single_char_token(cur_index, Semicolon),
             'a'..='z' | 'A'..='Z' | '_' => {
                 let ident = self.read_ident(cur_index);
                 match ident {
                     "fun" => Token::new(Fun, cur_index, 3),
+                    "take" => Token::new(Take, cur_index, 4),
+                    "mut" => Token::new(Mut, cur_index, 3),
+                    "read" => Token::new(Read, cur_index, 4),
+                    "give" => Token::new(Give, cur_index, 4),
+                    "break" => Token::new(Break, cur_index, 5),
+                    "pass" => Token::new(Pass, cur_index, 4),
+                    "ret" => Token::new(Return, cur_index, 3),
+                    "proto" => Token::new(Proto, cur_index, 5),
+                    "impl" => Token::new(Impl, cur_index, 4),
+                    "type" => Token::new(Type, cur_index, 4),
                     "unit" => Token::new(Unit, cur_index, 4),
                     "true" => Token::new(True, cur_index, 4),
                     "false" => Token::new(False, cur_index, 5),
@@ -175,117 +195,5 @@ impl Iterator for Lexer<'_> {
         } else {
             Some(tok)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use pretty_assertions::assert_eq;
-    use tokens::{TokenKind, TokenKind::*};
-
-    fn expect_tok(lexer: &mut Lexer, input: &str, expected: Vec<(TokenKind, &str)>) {
-        let token_kinds = lexer
-            .into_iter()
-            .map(|t| (t.kind, t.span.slice(input)))
-            .collect::<Vec<_>>();
-        assert_eq!(token_kinds, expected);
-    }
-
-    #[test]
-    fn all_syntax() {
-        let input = r#"
-# variable declaration
-foo :: 4;
-bar : Int = 33;
-
-unit;
-
-# functions
-calc :: fun (~x, ~y: Int) Int {
-  z :: x / y;
-  f :: ~((x & y) | (3 ^ 2));
-  true;
-  false;
-  z*z
-};
-
-calc(foo, bar)"#
-            .trim();
-        let mut lexer = Lexer::new(input);
-        expect_tok(
-            &mut lexer,
-            input,
-            vec![
-                (Identifier, "foo"),
-                (Colon, ":"),
-                (Colon, ":"),
-                (IntLiteral, "4"),
-                (Semicolon, ";"),
-                (Identifier, "bar"),
-                (Colon, ":"),
-                (Identifier, "Int"),
-                (SingleEqual, "="),
-                (IntLiteral, "33"),
-                (Semicolon, ";"),
-                (Unit, "unit"),
-                (Semicolon, ";"),
-                (Identifier, "calc"),
-                (Colon, ":"),
-                (Colon, ":"),
-                (Fun, "fun"),
-                (LParen, "("),
-                (Tilde, "~"),
-                (Identifier, "x"),
-                (Comma, ","),
-                (Tilde, "~"),
-                (Identifier, "y"),
-                (Colon, ":"),
-                (Identifier, "Int"),
-                (RParen, ")"),
-                (Identifier, "Int"),
-                (LBrace, "{"),
-                (Identifier, "z"),
-                (Colon, ":"),
-                (Colon, ":"),
-                (Identifier, "x"),
-                (Slash, "/"),
-                (Identifier, "y"),
-                (Semicolon, ";"),
-                (Identifier, "f"),
-                (Colon, ":"),
-                (Colon, ":"),
-                (Tilde, "~"),
-                (LParen, "("),
-                (LParen, "("),
-                (Identifier, "x"),
-                (BitAnd, "&"),
-                (Identifier, "y"),
-                (RParen, ")"),
-                (BitOr, "|"),
-                (LParen, "("),
-                (IntLiteral, "3"),
-                (BitXor, "^"),
-                (IntLiteral, "2"),
-                (RParen, ")"),
-                (RParen, ")"),
-                (Semicolon, ";"),
-                (True, "true"),
-                (Semicolon, ";"),
-                (False, "false"),
-                (Semicolon, ";"),
-                (Identifier, "z"),
-                (Asterisk, "*"),
-                (Identifier, "z"),
-                (RBrace, "}"),
-                (Semicolon, ";"),
-                (Identifier, "calc"),
-                (LParen, "("),
-                (Identifier, "foo"),
-                (Comma, ","),
-                (Identifier, "bar"),
-                (RParen, ")"),
-            ],
-        );
     }
 }

@@ -1,0 +1,97 @@
+---
+source: src/tests/mod.rs
+expression: ast
+input_file: src/tests/source_files/block_expressions.lv
+---
+Program(
+    [
+        Expression {
+            span: Span {
+                start: 0,
+                end: 30,
+            },
+            kind: VariableDecl {
+                name: "x",
+                value: Expression {
+                    span: Span {
+                        start: 5,
+                        end: 30,
+                    },
+                    kind: Block(
+                        [
+                            Expression {
+                                span: Span {
+                                    start: 9,
+                                    end: 13,
+                                },
+                                kind: Unit,
+                            },
+                            Expression {
+                                span: Span {
+                                    start: 16,
+                                    end: 20,
+                                },
+                                kind: BoolLiteral(
+                                    true,
+                                ),
+                            },
+                            Expression {
+                                span: Span {
+                                    start: 23,
+                                    end: 28,
+                                },
+                                kind: Infix {
+                                    left: Expression {
+                                        span: Span {
+                                            start: 23,
+                                            end: 24,
+                                        },
+                                        kind: IntLiteral(
+                                            7,
+                                        ),
+                                    },
+                                    operator: Minus,
+                                    right: Expression {
+                                        span: Span {
+                                            start: 27,
+                                            end: 28,
+                                        },
+                                        kind: IntLiteral(
+                                            4,
+                                        ),
+                                    },
+                                },
+                            },
+                        ],
+                    ),
+                },
+                mutable: false,
+                ty: None,
+            },
+        },
+        Expression {
+            span: Span {
+                start: 32,
+                end: 43,
+            },
+            kind: VariableDecl {
+                name: "y",
+                value: Expression {
+                    span: Span {
+                        start: 42,
+                        end: 43,
+                    },
+                    kind: Ident(
+                        "x",
+                    ),
+                },
+                mutable: false,
+                ty: Some(
+                    Ident(
+                        "Int",
+                    ),
+                ),
+            },
+        },
+    ],
+)

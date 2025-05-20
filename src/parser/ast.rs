@@ -1,13 +1,7 @@
 use crate::span::Span;
 
 #[derive(PartialEq, Eq, Debug)]
-pub struct Program(pub Vec<ExpressionStatement>);
-
-#[derive(PartialEq, Eq, Debug)]
-pub struct ExpressionStatement {
-    pub expr: Expression,
-    pub discarded: bool,
-}
+pub struct Program(pub Vec<Expression>);
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct Expression {
@@ -26,6 +20,8 @@ pub enum ExpressionKind {
     BoolLiteral(bool),
     IntLiteral(isize),
     Ident(String),
+
+    Block(Vec<Expression>),
 
     Prefix {
         operator: PrefixOperator,
@@ -47,7 +43,7 @@ pub enum ExpressionKind {
     Function {
         parameters: Vec<FunctionParameter>,
         return_type: Option<Type>,
-        body: Vec<ExpressionStatement>,
+        body: Box<Expression>,
     },
 
     FunctionCall {
@@ -59,7 +55,6 @@ pub enum ExpressionKind {
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum PrefixOperator {
     LogicalNot,
-    Negative,
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
