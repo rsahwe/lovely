@@ -416,6 +416,7 @@ impl Checker {
 
                 let num_args = arguments.len();
 
+                let mut first = true;
                 let mut arg_count_errors = vec![];
                 let mut type_errors = vec![];
                 let mut label_errors = vec![];
@@ -433,8 +434,15 @@ impl Checker {
                             },
                     } = &self.types[type_id].clone()
                     else {
-                        Err(Error::variable_is_not_a_function(name, expr.span))?
+                        if first {
+                            Err(Error::variable_is_not_a_function(name, expr.span))?
+                        } else {
+                            // Don't assume shadowing
+                            continue 'outer;
+                        }
                     };
+
+                    first = false;
 
                     let num_params = parameters.len();
                     if num_params != num_args {
