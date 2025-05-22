@@ -18,6 +18,7 @@ CheckedProgram {
                                 labeled_at_callsite: false,
                                 internal_name: "x",
                                 external_name: None,
+                                variable_id: 0,
                                 type_id: 0,
                             },
                             CheckedFunctionParameter {
@@ -27,6 +28,7 @@ CheckedProgram {
                                 external_name: Some(
                                     "to",
                                 ),
+                                variable_id: 1,
                                 type_id: 0,
                             },
                         ],
@@ -60,44 +62,67 @@ CheckedProgram {
         CheckedExpression {
             type_id: 2,
             data: VariableDecl {
-                name: "x",
+                name: "main",
                 value: CheckedExpression {
-                    type_id: 0,
-                    data: FunctionCall {
-                        name: "add",
-                        arguments: [
-                            CheckedFunctionArgument {
-                                label: None,
-                                value: CheckedExpression {
-                                    type_id: 0,
-                                    data: IntLiteral(
-                                        4,
-                                    ),
-                                },
-                            },
-                            CheckedFunctionArgument {
-                                label: Some(
-                                    "to",
-                                ),
-                                value: CheckedExpression {
-                                    type_id: 0,
-                                    data: IntLiteral(
-                                        9,
-                                    ),
-                                },
-                            },
-                        ],
+                    type_id: 4,
+                    data: Function {
+                        parameters: [],
+                        return_type: 0,
+                        body: CheckedExpression {
+                            type_id: 0,
+                            data: Block(
+                                [
+                                    CheckedExpression {
+                                        type_id: 2,
+                                        data: VariableDecl {
+                                            name: "x",
+                                            value: CheckedExpression {
+                                                type_id: 0,
+                                                data: FunctionCall {
+                                                    name: "add",
+                                                    arguments: [
+                                                        CheckedFunctionArgument {
+                                                            label: None,
+                                                            value: CheckedExpression {
+                                                                type_id: 0,
+                                                                data: IntLiteral(
+                                                                    4,
+                                                                ),
+                                                            },
+                                                        },
+                                                        CheckedFunctionArgument {
+                                                            label: Some(
+                                                                "to",
+                                                            ),
+                                                            value: CheckedExpression {
+                                                                type_id: 0,
+                                                                data: IntLiteral(
+                                                                    9,
+                                                                ),
+                                                            },
+                                                        },
+                                                    ],
+                                                    variable_id: 2,
+                                                },
+                                            },
+                                            mutable: false,
+                                            variable_id: 3,
+                                        },
+                                    },
+                                    CheckedExpression {
+                                        type_id: 0,
+                                        data: Ident {
+                                            name: "x",
+                                            variable_id: 3,
+                                        },
+                                    },
+                                ],
+                            ),
+                        },
                     },
                 },
                 mutable: false,
-                variable_id: 3,
-            },
-        },
-        CheckedExpression {
-            type_id: 0,
-            data: Ident {
-                name: "x",
-                variable_id: 3,
+                variable_id: 4,
             },
         },
     ],

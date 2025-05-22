@@ -1,0 +1,18 @@
+---
+source: src/tests/mod.rs
+expression: ir_string
+input_file: src/tests/source_files/functions.lv
+---
+ENTRY:
+  add#2 := FUN#0
+  main#4 := FUN#2
+  goto FUN#2
+
+FUN#0:
+  t1 := x#0 + y#1
+  ret t1
+
+FUN#2:
+  t3 := add#2(4, 9)
+  x#3 := t3
+  exit x#3

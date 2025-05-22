@@ -15,7 +15,7 @@ use types::{FunctionParameterType, FunctionParameterTypeKind, ScopedType, TypeKi
 use vars::{BorrowStatus, ScopedVariable};
 
 mod error;
-mod types;
+pub mod types;
 mod vars;
 
 type TypeId = usize;
@@ -34,9 +34,8 @@ pub struct Scope {
 pub struct Checker {
     cur_scope: ScopeId,
     scopes: Vec<Scope>,
-    types: Vec<ScopedType>,
+    pub types: Vec<ScopedType>,
     variables: Vec<ScopedVariable>,
-    type_errors: Vec<Error>,
 }
 
 impl Checker {
@@ -51,7 +50,6 @@ impl Checker {
                 ScopedType::named("Unit", 0),
             ],
             variables: vec![],
-            type_errors: vec![],
         }
     }
 
@@ -67,7 +65,7 @@ impl Checker {
         let Type::Ident(name) = ty;
         if let Some(type_id) = self.types.iter().position(|t| match &t.kind {
             TypeKind::Name(type_name) => name == type_name,
-            TypeKind::Function { .. } => todo!(),
+            TypeKind::Function { .. } => false, // TODO: handle function types
         } && t.scope_id == scope_id) {
             Some(type_id)
         } else if let Some(parent_id) = cur_scope.parent_scope {
@@ -118,14 +116,21 @@ impl Checker {
         variable_id
     }
 
-    pub fn check_program(&mut self, program: &Program) -> CheckedProgram {
-        CheckedProgram {
-            exprs: program
-                .0
-                .iter()
-                .map(|e| self.check_expression(e, None).unwrap())
-                .collect(),
+    pub fn check(&mut self, ast: &Program) -> Result<CheckedProgram, Vec<Error>> {
+        let mut checked_exprs = vec![];
+        let mut errors = vec![];
+        for expr in &ast.0 {
+            match self.check_expression(expr, None) {
+                Ok(checked_expr) => checked_exprs.push(checked_expr),
+                Err(err) => errors.push(err),
+            }
         }
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+        Ok(CheckedProgram {
+            exprs: checked_exprs,
+        })
     }
 
     fn check_expression(
@@ -150,6 +155,11 @@ impl Checker {
                 type_hint,
             ),
             ExpressionKind::Block(exprs) => {
+                // create a new scope
+                let new_scope = self.create_scope(Some(self.cur_scope));
+                let original_scope = self.cur_scope;
+                self.cur_scope = new_scope;
+
                 let mut checked_exprs = vec![];
                 let mut type_id = UNIT_ID;
                 for (index, expr) in exprs.iter().enumerate() {
@@ -162,6 +172,9 @@ impl Checker {
                     }
                     checked_exprs.push(checked_expr);
                 }
+
+                self.cur_scope = original_scope;
+
                 self.typed_expression(
                     CheckedExpressionData::Block(checked_exprs),
                     expr.span,
@@ -303,14 +316,7 @@ impl Checker {
                 // add params as local variables in said scope
                 for param in parameters {
                     if let Some(type_id) = self.lookup_type(&param.ty, self.cur_scope) {
-                        checked_params.push(CheckedFunctionParameter {
-                            modifier: param.modifier,
-                            internal_name: param.internal_name.clone(),
-                            external_name: param.external_name.clone(),
-                            labeled_at_callsite: param.labeled_at_callsite,
-                            type_id,
-                        });
-                        self.add_variable(
+                        let param_var_id = self.add_variable(
                             &param.internal_name,
                             type_id,
                             match param.modifier {
@@ -319,6 +325,14 @@ impl Checker {
                                 ParameterModifier::Take => BorrowStatus::ImmutableOwned,
                             },
                         );
+                        checked_params.push(CheckedFunctionParameter {
+                            modifier: param.modifier,
+                            internal_name: param.internal_name.clone(),
+                            external_name: param.external_name.clone(),
+                            labeled_at_callsite: param.labeled_at_callsite,
+                            type_id,
+                            variable_id: param_var_id,
+                        });
                     } else {
                         return Err(Error::type_not_found(param.ty.clone(), expr.span));
                     }
@@ -368,7 +382,7 @@ impl Checker {
             ExpressionKind::FunctionCall { name, arguments } => {
                 let mut args = vec![];
 
-                let Some((_, type_id)) = self.lookup_variable(name, self.cur_scope) else {
+                let Some((var_id, type_id)) = self.lookup_variable(name, self.cur_scope) else {
                     return Err(Error::variable_not_found(name, expr.span));
                 };
                 let ScopedType {
@@ -392,8 +406,8 @@ impl Checker {
                 for (param, arg) in parameters.clone().iter().zip(arguments) {
                     if param.callsite_label != arg.label {
                         return Err(Error::incorrect_arg_label(
-                            param.callsite_label.clone().unwrap(),
-                            arg.label.clone().unwrap(),
+                            param.callsite_label.clone(),
+                            arg.label.clone(),
                             expr.span,
                         ));
                     }
@@ -408,6 +422,7 @@ impl Checker {
                     CheckedExpressionData::FunctionCall {
                         name: name.to_string(),
                         arguments: args,
+                        variable_id: var_id,
                     },
                     expr.span,
                     *return_type,
@@ -438,13 +453,13 @@ impl Checker {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct CheckedProgram {
-    exprs: Vec<CheckedExpression>,
+    pub exprs: Vec<CheckedExpression>,
 }
 
 #[derive(PartialEq, Eq, Debug)]
-struct CheckedExpression {
-    type_id: TypeId,
-    data: CheckedExpressionData,
+pub struct CheckedExpression {
+    pub type_id: TypeId,
+    pub data: CheckedExpressionData,
 }
 impl CheckedExpression {
     pub fn new(data: CheckedExpressionData, type_id: TypeId) -> Self {
@@ -453,7 +468,7 @@ impl CheckedExpression {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-enum CheckedExpressionData {
+pub enum CheckedExpressionData {
     Unit,
     BoolLiteral(bool),
     IntLiteral(isize),
@@ -490,20 +505,22 @@ enum CheckedExpressionData {
     FunctionCall {
         name: String,
         arguments: Vec<CheckedFunctionArgument>,
+        variable_id: VariableId,
     },
 }
 
 #[derive(PartialEq, Eq, Debug)]
-struct CheckedFunctionArgument {
-    label: Option<String>,
-    value: CheckedExpression,
+pub struct CheckedFunctionArgument {
+    pub label: Option<String>,
+    pub value: CheckedExpression,
 }
 
 #[derive(PartialEq, Eq, Debug)]
-struct CheckedFunctionParameter {
-    modifier: ParameterModifier,
-    labeled_at_callsite: bool,
-    internal_name: String,
-    external_name: Option<String>,
-    type_id: TypeId,
+pub struct CheckedFunctionParameter {
+    pub modifier: ParameterModifier,
+    pub labeled_at_callsite: bool,
+    pub internal_name: String,
+    pub external_name: Option<String>,
+    pub variable_id: VariableId,
+    pub type_id: TypeId,
 }

@@ -8,12 +8,27 @@ pub struct Error {
 }
 #[derive(Debug)]
 pub enum ErrorKind {
-    TypeMismatch { expected: TypeId, got: TypeId },
-    VariableNotFound { name: String },
-    TypeNotFound { ty: Type },
-    VariableIsNotAFunction { name: String },
-    IncorrectArgCount { expected: usize, got: usize },
-    IncorrectArgLabel { expected: String, got: String },
+    TypeMismatch {
+        expected: TypeId,
+        got: TypeId,
+    },
+    VariableNotFound {
+        name: String,
+    },
+    TypeNotFound {
+        ty: Type,
+    },
+    VariableIsNotAFunction {
+        name: String,
+    },
+    IncorrectArgCount {
+        expected: usize,
+        got: usize,
+    },
+    IncorrectArgLabel {
+        expected: Option<String>,
+        got: Option<String>,
+    },
 }
 impl Error {
     pub fn type_mismatch(expected: TypeId, got: TypeId, span: Span) -> Error {
@@ -50,7 +65,7 @@ impl Error {
             kind: ErrorKind::IncorrectArgCount { expected, got },
         }
     }
-    pub fn incorrect_arg_label(expected: String, got: String, span: Span) -> Error {
+    pub fn incorrect_arg_label(expected: Option<String>, got: Option<String>, span: Span) -> Error {
         Error {
             span,
             kind: ErrorKind::IncorrectArgLabel { expected, got },

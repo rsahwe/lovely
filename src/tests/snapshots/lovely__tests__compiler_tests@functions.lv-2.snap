@@ -81,59 +81,94 @@ Program(
         Expression {
             span: Span {
                 start: 47,
-                end: 65,
+                end: 98,
             },
             kind: VariableDecl {
-                name: "x",
+                name: "main",
                 value: Expression {
                     span: Span {
-                        start: 52,
-                        end: 65,
+                        start: 55,
+                        end: 98,
                     },
-                    kind: FunctionCall {
-                        name: "add",
-                        arguments: [
-                            FunctionArgument {
-                                label: None,
-                                value: Expression {
-                                    span: Span {
-                                        start: 56,
-                                        end: 57,
-                                    },
-                                    kind: IntLiteral(
-                                        4,
-                                    ),
-                                },
+                    kind: Function {
+                        parameters: [],
+                        return_type: Some(
+                            Ident(
+                                "Int",
+                            ),
+                        ),
+                        body: Expression {
+                            span: Span {
+                                start: 69,
+                                end: 98,
                             },
-                            FunctionArgument {
-                                label: Some(
-                                    "to",
-                                ),
-                                value: Expression {
-                                    span: Span {
-                                        start: 63,
-                                        end: 64,
+                            kind: Block(
+                                [
+                                    Expression {
+                                        span: Span {
+                                            start: 73,
+                                            end: 91,
+                                        },
+                                        kind: VariableDecl {
+                                            name: "x",
+                                            value: Expression {
+                                                span: Span {
+                                                    start: 78,
+                                                    end: 91,
+                                                },
+                                                kind: FunctionCall {
+                                                    name: "add",
+                                                    arguments: [
+                                                        FunctionArgument {
+                                                            label: None,
+                                                            value: Expression {
+                                                                span: Span {
+                                                                    start: 82,
+                                                                    end: 83,
+                                                                },
+                                                                kind: IntLiteral(
+                                                                    4,
+                                                                ),
+                                                            },
+                                                        },
+                                                        FunctionArgument {
+                                                            label: Some(
+                                                                "to",
+                                                            ),
+                                                            value: Expression {
+                                                                span: Span {
+                                                                    start: 89,
+                                                                    end: 90,
+                                                                },
+                                                                kind: IntLiteral(
+                                                                    9,
+                                                                ),
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            mutable: false,
+                                            ty: None,
+                                        },
                                     },
-                                    kind: IntLiteral(
-                                        9,
-                                    ),
-                                },
-                            },
-                        ],
+                                    Expression {
+                                        span: Span {
+                                            start: 95,
+                                            end: 96,
+                                        },
+                                        kind: Ident(
+                                            "x",
+                                        ),
+                                    },
+                                ],
+                            ),
+                        },
                     },
                 },
                 mutable: false,
                 ty: None,
             },
-        },
-        Expression {
-            span: Span {
-                start: 67,
-                end: 68,
-            },
-            kind: Ident(
-                "x",
-            ),
         },
     ],
 )

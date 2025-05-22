@@ -24,6 +24,7 @@ pub enum Error {
     Expected { expected: String, got: String },
     Syntax(String),
     UnexpectedEof,
+    IllegalGlobalExpression(Expression),
 }
 
 impl Error {
@@ -42,6 +43,7 @@ impl Error {
 pub struct Parser<'src> {
     source: String,
     lexer: Peekable<Lexer<'src>>,
+    inside_function: bool,
 }
 
 impl<'src> Parser<'src> {
@@ -50,6 +52,7 @@ impl<'src> Parser<'src> {
         Self {
             source: source.to_string(),
             lexer,
+            inside_function: false,
         }
     }
 
@@ -136,7 +139,11 @@ impl<'src> Parser<'src> {
             }
         }
 
-        Ok(expr)
+        if expr.kind.is_const() || self.inside_function {
+            Ok(expr)
+        } else {
+            Err(Error::IllegalGlobalExpression(expr))
+        }
     }
 
     fn prefix_parse_fn(&mut self) -> Result<PrefixParseFn, Error> {
@@ -373,7 +380,10 @@ impl<'src> Parser<'src> {
 
         self.expect_token(Colon)?;
 
+        self.inside_function = true;
         let body = self.parse_expression(Precedence::Lowest)?;
+        self.inside_function = false;
+
         let end_span = body.span;
 
         Ok(Expression::new(

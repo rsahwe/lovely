@@ -2,7 +2,7 @@ use std::fs;
 
 use insta::glob;
 
-use crate::{checker::Checker, lexer::Lexer, parser::Parser};
+use crate::{checker::Checker, ir::IRGenerator, lexer::Lexer, parser::Parser};
 
 #[test]
 fn compiler_tests() {
@@ -21,7 +21,17 @@ fn compiler_tests() {
 
         // test the checker
         let mut checker = Checker::new();
-        let checked_program = checker.check_program(&ast);
+        let checked_program = checker.check(&ast).unwrap();
         insta::assert_debug_snapshot!(checked_program);
+
+        // test the IR
+        let ir_generator = IRGenerator::new(checker.types);
+        let ir = ir_generator.program_ir(&checked_program);
+        let ir_string = ir
+            .iter()
+            .map(|b| b.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        insta::assert_snapshot!(ir_string);
     });
 }

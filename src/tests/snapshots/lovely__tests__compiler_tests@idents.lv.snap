@@ -19,7 +19,7 @@ input_file: src/tests/source_files/idents.lv
         },
     },
     Token {
-        kind: SingleEqual,
+        kind: Colon,
         span: Span {
             start: 3,
             end: 4,
@@ -47,7 +47,7 @@ input_file: src/tests/source_files/idents.lv
         },
     },
     Token {
-        kind: SingleEqual,
+        kind: Colon,
         span: Span {
             start: 11,
             end: 12,
@@ -75,7 +75,7 @@ input_file: src/tests/source_files/idents.lv
         },
     },
     Token {
-        kind: SingleEqual,
+        kind: Colon,
         span: Span {
             start: 19,
             end: 20,
