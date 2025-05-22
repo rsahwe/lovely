@@ -90,6 +90,7 @@ impl Checker {
             .variables
             .iter()
             .enumerate()
+            .rev()
             .find(|t| t.1.scope_id == scope_id && t.1.name == var_name)
         {
             Some((index, variable.type_id))
