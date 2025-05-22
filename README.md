@@ -4,7 +4,7 @@ Lovely is a low-level systems programming language, designed to be used to creat
 
 ## Contributing:
 
-All language features are being developed on live stream on my [YouTube channel](https://www.youtube.com/@kiahjh-dev); however, if you you have any optimizations/enhancements/fixes you want to contribute, please feel free to open a PR! I'm not currently accepting PRs that add new features/functionality to the language, because this is a learning project and I'd like to give those things a shot myself.
+All language features are being developed live, on my [YouTube channel](https://www.youtube.com/@kiahjh-dev); however, if you have any optimizations/enhancements/fixes you want to contribute, please feel free to open a PR! I'm not currently accepting PRs that add new features/functionality to the language, because this is a learning project and I'd like to give those things a shot myself.
 
 ## The language
 
@@ -17,14 +17,14 @@ foo := 4; # mutable var
 bar :: 2; # immutable var
 ```
 
-Types are infered, but can be specified like so:
+Types are inferred, but can be specified like so:
 
 ```lovely
 foo : Int = 4;
 bar : Int : 2;
 ```
 
-If you specify the type, you can declare and initialize a variable on two differnt lines:
+If you specify the type, you can declare and initialize a variable on two different lines:
 
 ```lovely
 # declare foo
