@@ -42,7 +42,6 @@ impl Codegen {
 
     fn codegen_expression(&mut self, expr: &CheckedExpression) {
         match &expr.data {
-            CheckedExpressionData::Unit => todo!("units"),
             CheckedExpressionData::BoolLiteral(_) => todo!("bool literals"),
             CheckedExpressionData::IntLiteral(_) => todo!("int literals"),
             CheckedExpressionData::Ident { .. } => todo!("idents"),

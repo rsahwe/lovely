@@ -180,17 +180,24 @@ input_file: src/tests/source_files/variable_decls.lv
         },
     },
     Token {
-        kind: Unit,
+        kind: LBrace,
         span: Span {
             start: 78,
-            end: 82,
+            end: 79,
         },
     },
     Token {
         kind: RBrace,
         span: Span {
-            start: 83,
-            end: 84,
+            start: 79,
+            end: 80,
+        },
+    },
+    Token {
+        kind: RBrace,
+        span: Span {
+            start: 81,
+            end: 82,
         },
     },
 ]

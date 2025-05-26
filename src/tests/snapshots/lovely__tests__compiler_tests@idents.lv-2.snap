@@ -124,11 +124,22 @@ Program(
         Expression {
             span: Span {
                 start: 60,
-                end: 61,
+                end: 66,
             },
-            kind: Ident(
-                "c",
-            ),
+            kind: VariableDecl {
+                name: "x",
+                value: Expression {
+                    span: Span {
+                        start: 65,
+                        end: 66,
+                    },
+                    kind: Ident(
+                        "c",
+                    ),
+                },
+                mutable: false,
+                ty: None,
+            },
         },
     ],
 )

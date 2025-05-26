@@ -151,4 +151,25 @@ input_file: src/tests/source_files/idents.lv
             end: 61,
         },
     },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 62,
+            end: 63,
+        },
+    },
+    Token {
+        kind: Colon,
+        span: Span {
+            start: 63,
+            end: 64,
+        },
+    },
+    Token {
+        kind: Identifier,
+        span: Span {
+            start: 65,
+            end: 66,
+        },
+    },
 ]

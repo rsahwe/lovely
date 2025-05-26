@@ -86,7 +86,6 @@ impl IRGenerator {
 
     pub fn expression_ir(&mut self, expr: &CheckedExpression) -> Entity {
         match &expr.data {
-            CheckedExpressionData::Unit => Entity::unit(),
             CheckedExpressionData::BoolLiteral(val) => Entity::bool(*val),
             CheckedExpressionData::IntLiteral(val) => Entity::int_literal(*val),
             CheckedExpressionData::Ident { name, variable_id } => {

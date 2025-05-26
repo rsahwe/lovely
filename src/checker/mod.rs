@@ -119,10 +119,10 @@ impl Checker {
             vec.append(
                 &mut self
                     .lookup_variable_all(var_name, parent_id)
-                    .unwrap_or(vec![]),
+                    .unwrap_or_default(),
             );
         }
-        if vec.len() == 0 { None } else { Some(vec) }
+        if vec.is_empty() { None } else { Some(vec) }
     }
 
     fn add_variable(
@@ -164,9 +164,6 @@ impl Checker {
         type_hint: Option<TypeId>,
     ) -> Result<CheckedExpression, Error> {
         match &expr.kind {
-            ExpressionKind::Unit => {
-                self.typed_expression(CheckedExpressionData::Unit, expr.span, UNIT_ID, type_hint)
-            }
             ExpressionKind::BoolLiteral(value) => self.typed_expression(
                 CheckedExpressionData::BoolLiteral(*value),
                 expr.span,
@@ -482,15 +479,13 @@ impl Checker {
                     );
                 }
 
-                for error in label_errors {
+                if let Some(error) = label_errors.into_iter().next() {
                     return Err(error);
                 }
-
-                for error in type_errors {
+                if let Some(error) = type_errors.into_iter().next() {
                     return Err(error);
                 }
-
-                for error in arg_count_errors {
+                if let Some(error) = arg_count_errors.into_iter().next() {
                     return Err(error);
                 }
 
@@ -536,7 +531,6 @@ impl CheckedExpression {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum CheckedExpressionData {
-    Unit,
     BoolLiteral(bool),
     IntLiteral(isize),
     Ident {

@@ -5,4 +5,4 @@ c :: a + b
 
 c :: c + 3 # Detects shadowing
 
-c
+x :: c
