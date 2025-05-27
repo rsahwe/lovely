@@ -121,7 +121,7 @@ impl Display for Instruction {
     }
 }
 
-type TempId = usize;
+pub type TempId = usize;
 
 #[derive(Clone, Debug)]
 pub struct Entity {
@@ -225,31 +225,3 @@ impl Display for Operator {
         }
     }
 }
-
-// x = (-b + sqrt(b^2 - 4*a*c)) / (2*a)
-//
-// t1 := b * b
-// t2 := 4 * a
-// t3 := t2 * c
-// t4 := t1 - t3
-// t5 := sqrt(t4)
-// t6 := 0 - b
-// t7 := t5 + t6
-// t8 := 2 * a
-// t9 := t7 / t8
-// x := t9
-
-// for (i = 0; i < 10; ++i) {
-//     b[i] = i*i;
-// }
-//
-//      t1 := 0                ; initialize i
-//      L1:
-//      if t1 >= 10 goto L2    ; conditional jump
-//      t2 := t1 * t1          ; square of i
-//      t3 := t1 * 4           ; word-align address
-//      t4 := b + t3           ; address to store i*i
-//      *t4 := t2              ; store through pointer
-//      t1 := t1 + 1           ; increase i
-//      goto L1                ; repeat loop
-//      L2:
