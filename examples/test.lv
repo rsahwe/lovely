@@ -1,6 +1,3 @@
-get_four :: fun () -> Int: 2 + 2
+x :: 9
 
-main :: fun () -> Int: {
-  x :: get_four()
-  x + 3 # should exit with 7
-}
+main :: fun () -> Int: x

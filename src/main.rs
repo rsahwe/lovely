@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use checker::Checker;
 use clap::{Parser, Subcommand};
-use codegen::Codegen;
+use codegen::emitters::{Emitter, x86_64_linux_nasm::CodeGenerator};
 use ir::IRGenerator;
 use parser::Parser as LovelyParser;
 
@@ -11,6 +11,7 @@ mod ir;
 mod lexer;
 mod parser;
 mod span;
+mod targets;
 
 #[cfg(test)]
 mod tests;
@@ -65,7 +66,7 @@ fn compile(path: String, output_path: Option<String>) {
     println!("{ir_string}");
     println!("-------------------------\n\nASM:");
 
-    let mut codegener = Codegen::new();
+    let mut codegener = CodeGenerator::new();
     let asm = codegener.gen_asm(&ir);
 
     if let Some(output_path) = output_path {
