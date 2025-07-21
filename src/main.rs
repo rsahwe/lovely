@@ -61,6 +61,7 @@ fn compile(path: String, output_path: Option<String>) {
         .map(|b| b.to_string())
         .collect::<Vec<_>>()
         .join("\n");
+    println!("{}", ir_string);
 
     let mut codegener = CodeGenerator::new();
     let asm = codegener.gen_asm(&ir);
