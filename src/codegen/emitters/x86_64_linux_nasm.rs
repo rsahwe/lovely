@@ -50,6 +50,7 @@ impl CodeGenerator {
     }
 
     fn instruction_codegen(&mut self, instr: &Instruction) {
+        self.text_section.push_str(&format!("  ; {}\n", instr));
         match instr {
             Instruction::Add { dest, lhs, rhs } => {
                 if let Value::Temp(temp_id) = dest.value {
