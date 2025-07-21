@@ -194,6 +194,17 @@ pub enum Type {
     Function { return_type: Box<Type> },
 }
 
+impl Type {
+    pub fn size_in_bytes(&self) -> usize {
+        match &self {
+            Type::Int => 8,
+            Type::Bool => 1,
+            Type::Unit => 0,
+            Type::Function { .. } => 8,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Value {
     Temp(TempId),

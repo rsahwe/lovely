@@ -28,7 +28,7 @@ add :: fun (~first: Int, to second: Int) -> Int: first + second
 
 # <expr> can be a block expression, in which case it looks like a function
 # from other languages: fun (<params>) -> <return_type>: { <body> }
-add_with_block :: fun(~first: Int, to second: Int) -> Int: {
+add_with_block :: fun (~first: Int, to second: Int) -> Int: {
   first + second
 }
 
