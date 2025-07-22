@@ -54,50 +54,71 @@ impl CodeGenerator {
         match instr {
             Instruction::Add { dest, lhs, rhs } => {
                 if let Value::Temp(temp_id) = dest.value {
-                    let name = format!("t{temp_id}");
-                    self.local_vars
-                        .insert(name.to_string(), self.current_stack_offset);
-                    self.current_stack_offset += dest.ty.size_in_bytes();
+                    self.allocate_temp_value(temp_id, dest);
 
                     let lhs_asm = self.entity_to_asm(lhs);
                     let rhs_asm = self.entity_to_asm(rhs);
-                    let dest_asm = self.entity_to_asm(dest);
 
                     self.text_section
-                        .push_str(&format!("  push qword {lhs_asm}\n"));
+                        .push_str(&format!("  mov rax, {lhs_asm}\n"));
                     self.text_section
-                        .push_str(&format!("  add qword {}, {}", dest_asm, rhs_asm));
+                        .push_str(&format!("  add rax, {rhs_asm}\n"));
+                    self.text_section.push_str(&format!("  push qword rax\n"));
                 } else {
                     unreachable!()
                 }
             }
             Instruction::Sub { dest, lhs, rhs } => {
                 if let Value::Temp(temp_id) = dest.value {
-                    let name = format!("t{temp_id}");
-                    self.local_vars
-                        .insert(name.to_string(), self.current_stack_offset);
-                    self.current_stack_offset += dest.ty.size_in_bytes();
+                    self.allocate_temp_value(temp_id, dest);
 
                     let lhs_asm = self.entity_to_asm(lhs);
                     let rhs_asm = self.entity_to_asm(rhs);
-                    let dest_asm = self.entity_to_asm(dest);
 
                     self.text_section
-                        .push_str(&format!("  push qword {lhs_asm}\n"));
+                        .push_str(&format!("  mov rax, {lhs_asm}\n"));
                     self.text_section
-                        .push_str(&format!("  sub qword {}, {}", dest_asm, rhs_asm));
+                        .push_str(&format!("  sub rax, {rhs_asm}\n"));
+                    self.text_section.push_str(&format!("  push qword rax\n"));
                 } else {
                     unreachable!()
                 }
             }
-            Instruction::Mul { .. } => {
-                self.text_section.push_str("  TODO: mul");
+            Instruction::Mul { dest, lhs, rhs } => {
+                if let Value::Temp(temp_id) = dest.value {
+                    self.allocate_temp_value(temp_id, dest);
+
+                    let lhs_asm = self.entity_to_asm(lhs);
+                    let rhs_asm = self.entity_to_asm(rhs);
+
+                    self.text_section
+                        .push_str(&format!("  mov rax, {lhs_asm}\n"));
+                    self.text_section
+                        .push_str(&format!("  imul rax, {rhs_asm}\n"));
+                    self.text_section.push_str(&format!("  push qword rax\n"));
+                } else {
+                    unreachable!()
+                }
             }
-            Instruction::Div { .. } => {
-                self.text_section.push_str("  TODO: div");
+            Instruction::Div { dest, lhs, rhs } => {
+                if let Value::Temp(temp_id) = dest.value {
+                    self.allocate_temp_value(temp_id, dest);
+
+                    let dividend_asm = self.entity_to_asm(lhs);
+                    let divisor_asm = self.entity_to_asm(rhs);
+
+                    self.text_section
+                        .push_str(&format!("  mov rax, {dividend_asm}\n"));
+                    self.text_section
+                        .push_str(&format!("  mov rcx, {divisor_asm}\n"));
+                    self.text_section.push_str(&format!("  idiv rcx\n"));
+                    self.text_section.push_str(&format!("  push qword rax\n"));
+                } else {
+                    unreachable!()
+                }
             }
             Instruction::Not { .. } => {
-                self.text_section.push_str("  TODO: not");
+                self.text_section.push_str("  TODO: not\n");
             }
             Instruction::Assign { dest, src } => match (&dest.value, &src.ty) {
                 (Value::Variable(name), ty) => {
@@ -107,21 +128,25 @@ impl CodeGenerator {
 
                     let src_asm = self.entity_to_asm(src);
                     self.text_section
-                        .push_str(&format!("  push qword {}", src_asm));
+                        .push_str(&format!("  push qword {}\n", src_asm));
                 }
                 _ => unreachable!(),
             },
             Instruction::Conditional { .. } => {
-                self.text_section.push_str("  TODO: conditional");
+                self.text_section.push_str("  TODO: conditional\n");
             }
             Instruction::Call { .. } => {
-                self.text_section.push_str("  TODO: call");
+                self.text_section.push_str("  TODO: call\n");
             }
             Instruction::Goto(label) => {
-                self.text_section.push_str(&format!("  jmp {label}"));
+                self.text_section.push_str(&format!("  jmp {label}\n"));
             }
-            Instruction::Ret(_) => {
-                self.text_section.push_str("  TODO: ret");
+            Instruction::Ret(entity) => {
+                let entity_asm = self.entity_to_asm(entity);
+                self.text_section
+                    .push_str(&format!("  mov rax, {entity_asm}\n"));
+                self.text_section.push_str("  leave\n");
+                self.text_section.push_str("  ret");
             }
             Instruction::Exit(entity) => {
                 self.text_section.push_str("  mov rax, 60\n");
@@ -182,16 +207,11 @@ impl CodeGenerator {
         }
     }
 
-    fn if_temp_push(&mut self, entity: &Entity) {
-        if let Value::Temp(temp_id) = entity.value {
-            let name = format!("t{temp_id}");
-            self.local_vars
-                .insert(name.to_string(), self.current_stack_offset);
-            self.current_stack_offset += entity.ty.size_in_bytes();
-            let entity_asm = self.entity_to_asm(entity);
-            self.text_section
-                .push_str(&format!("  push qword {entity_asm}"));
-        }
+    fn allocate_temp_value(&mut self, temp_id: TempId, dest_entity: &Entity) {
+        let name = format!("t{temp_id}");
+        self.local_vars
+            .insert(name.to_string(), self.current_stack_offset);
+        self.current_stack_offset += dest_entity.ty.size_in_bytes();
     }
 }
 

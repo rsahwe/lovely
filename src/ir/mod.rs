@@ -173,6 +173,8 @@ impl IRGenerator {
                 variable_id,
                 ..
             } => {
+                let previous_is_main = self.is_main;
+
                 let this_is_main = if let CheckedExpressionData::Function { .. } = value.data {
                     name == "main" && self.current_block == 0
                 } else {
@@ -181,6 +183,8 @@ impl IRGenerator {
 
                 if this_is_main {
                     self.is_main = true;
+                } else if previous_is_main {
+                    self.is_main = false;
                 }
 
                 let val = self.expression_ir(value);
@@ -188,6 +192,8 @@ impl IRGenerator {
                 if this_is_main {
                     self.main_label = Some(val.to_string());
                     self.is_main = false;
+                } else if previous_is_main {
+                    self.is_main = true;
                 }
 
                 let var_name = format!("{name}#{variable_id}");
