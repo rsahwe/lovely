@@ -39,7 +39,7 @@ impl CodeGenerator {
         } else {
             self.text_section += &block.label;
             self.text_section.push_str(":\n");
-            self.text_section.push_str("  enter 0, 0\n");
+            self.text_section.push_str("  enter 0, 0\n\n");
 
             for instr in &block.instructions {
                 self.instruction_codegen(instr);
@@ -109,10 +109,9 @@ impl CodeGenerator {
 
                     self.text_section
                         .push_str(&format!("  mov rax, {dividend_asm}\n"));
-                    self.text_section
-                        .push_str(&format!("  mov rcx, {divisor_asm}\n"));
-                    self.text_section.push_str(&format!("  idiv rcx\n"));
-                    self.text_section.push_str(&format!("  push qword rax\n"));
+                    self.text_section.push_str("  cqo\n");
+                    self.text_section.push_str(&format!("  idiv qword {divisor_asm}\n"));
+                    self.text_section.push_str("  push qword rax\n");
                 } else {
                     unreachable!()
                 }
