@@ -165,7 +165,7 @@ type List('a) {
   })
 }
 
-proto Iterator('a) { 
+proto Iterator('a) {
   type Item
 
   next: fun (mut 'a) -> Item

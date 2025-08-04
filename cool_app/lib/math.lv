@@ -1,0 +1,16 @@
+use foo/bar/baz#(lorem as lorem)
+
+-- Adds two integers
+add :: fun (~x: Int, to y: Int) -> Int: x + y
+
+-- Subtracts two integers
+subtract :: fun (~x: Int, from y: Int) -> Int: y - x
+
+-- Multiplies two integers
+multiply :: fun (~x: Int, with y: Int) -> Int: x * y
+
+-- Divides two integers
+divide :: fun (~x: Int, by y: Int) -> Int: x / y
+
+-- The ratio of the circumference to the diameter of a circle
+pi :: 3

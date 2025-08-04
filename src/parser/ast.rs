@@ -19,9 +19,7 @@ pub enum ExpressionKind {
     BoolLiteral(bool),
     IntLiteral(isize),
     Ident(String),
-
     Block(Vec<Expression>),
-
     Prefix {
         operator: PrefixOperator,
         expression: Box<Expression>,
@@ -31,25 +29,35 @@ pub enum ExpressionKind {
         operator: InfixOperator,
         right: Box<Expression>,
     },
-
     VariableDecl {
         name: String,
         value: Box<Expression>,
         mutable: bool,
         ty: Option<Type>,
     },
-
     Function {
         parameters: Vec<FunctionParameter>,
         return_type: Option<Type>,
         body: Box<Expression>,
     },
-
     FunctionCall {
         name: String,
         arguments: Vec<FunctionArgument>,
     },
+    Use {
+        segments: Vec<String>,
+        tail: Vec<UseTailItem>,
+    },
 }
+
+// this is what I'm going with:
+//
+// use foo/bar/baz#(apple_function as apple, OrangeType, global_constant as globby)
+// use foo/bar/baz
+//
+// baz#apple_function()
+//
+// -- for comments, # for namespace
 
 impl ExpressionKind {
     pub fn is_const(&self) -> bool {
@@ -62,8 +70,15 @@ impl ExpressionKind {
             Infix { left, right, .. } => left.kind.is_const() && right.kind.is_const(),
             VariableDecl { value, mutable, .. } => !mutable && value.kind.is_const(),
             FunctionCall { .. } => false,
+            Use { .. } => true,
         }
     }
+}
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct UseTailItem {
+    pub name: String,
+    pub alias: Option<String>,
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]

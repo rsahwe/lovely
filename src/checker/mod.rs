@@ -491,6 +491,7 @@ impl Checker {
 
                 unreachable!("No error, no missing function and no success???")
             }
+            ExpressionKind::Use { .. } => todo!("typechecking use expressions"),
         }
     }
 

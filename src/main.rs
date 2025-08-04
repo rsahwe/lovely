@@ -1,10 +1,9 @@
 #![allow(dead_code)]
-use checker::Checker;
-use clap::{Parser, Subcommand};
-use codegen::emitters::{Emitter, x86_64_linux_nasm::CodeGenerator};
-use ir::IRGenerator;
-use parser::Parser as LovelyParser;
 
+use blossom::Blossom;
+use clap::{Parser, Subcommand};
+
+mod blossom;
 mod checker;
 mod codegen;
 mod ir;
@@ -20,7 +19,10 @@ pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]
 #[command(version, name = "Lovely")]
-#[command(about = "Does awesome things", long_about = None)]
+#[command(
+    about = "A lovely, compiled, type-driven systems programming language.",
+    long_about = None
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -28,12 +30,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Compile {
+    Build {
         #[arg()]
         path: String,
-
-        #[arg(short, long)]
-        output: Option<String>,
     },
 }
 
@@ -41,34 +40,13 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Compile { path, output } => compile(path, output),
-    }
-}
-
-fn compile(path: String, output_path: Option<String>) {
-    println!("Compiling {path}...");
-    let file_source = std::fs::read_to_string(path).expect("Unable to read file");
-    let mut parser = LovelyParser::new(&file_source);
-    let ast = parser.parse().expect("Failed to parse");
-    let mut checker = Checker::new();
-    let checked_program = checker.check(&ast).expect("Failed to check");
-
-    let ir_generator = IRGenerator::new(checker.types);
-    let ir = ir_generator.program_ir(&checked_program);
-
-    let ir_string = ir
-        .iter()
-        .map(|b| b.to_string())
-        .collect::<Vec<_>>()
-        .join("\n");
-    println!("{}", ir_string);
-
-    let mut codegener = CodeGenerator::new();
-    let asm = codegener.gen_asm(&ir);
-
-    if let Some(output_path) = output_path {
-        std::fs::write(output_path, asm).expect("Unable to write file");
-    } else {
-        println!("{}", asm);
+        Commands::Build { path } => {
+            println!("");
+            let Ok(_) = Blossom::build(path) else {
+                blossom::printer::error("That's not a directory you silly!\n");
+                return;
+            };
+            println!("\n");
+        }
     }
 }

@@ -1,0 +1,4 @@
+use lib/math
+use num.(get_three, get_four)
+
+main :: fun () -> Int: math.add(2, to: get_three())

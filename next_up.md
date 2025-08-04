@@ -1,2 +1,0 @@
-- all about function call!!
-- fix that idiv bug that rsahwe pointed out

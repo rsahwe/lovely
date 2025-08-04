@@ -11,7 +11,7 @@ use ast::{
     Expression, ExpressionKind, FunctionArgument, FunctionParameter, InfixOperator,
     ParameterModifier, Precedence, PrefixOperator, Program, Type,
 };
-use std::iter::Peekable;
+use std::{fmt::Display, iter::Peekable};
 
 pub mod ast;
 
@@ -26,6 +26,25 @@ pub enum Error {
     UnexpectedEof,
     IllegalGlobalExpression(Expression),
 }
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::NoToken => write!(f, "no token"),
+            Error::NoPrefixParseFn(token) => {
+                write!(f, "no prefix parse function for token {:?}", token)
+            }
+            Error::Expected { expected, got } => write!(f, "expected {}, got {}", expected, got),
+            Error::Syntax(msg) => write!(f, "syntax error: {}", msg),
+            Error::UnexpectedEof => write!(f, "unexpected end of file"),
+            Error::IllegalGlobalExpression(expr) => {
+                write!(f, "illegal global expression: {:?}", expr)
+            }
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 impl Error {
     pub fn expected(expected: &str, got: &str) -> Self {
@@ -83,13 +102,6 @@ impl<'src> Parser<'src> {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::Multiply,
-                        Precedence::Product,
-                    )?;
-                }
-                Slash => {
-                    expr = self.parse_infix_expression(
-                        expr,
-                        InfixOperator::Divide,
                         Precedence::Product,
                     )?;
                 }
@@ -488,7 +500,7 @@ impl<'src> Parser<'src> {
             DoubleEqual | NotEqual => Precedence::Equality,
             LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual => Precedence::Comparison,
             Plus | Minus => Precedence::Sum,
-            Asterisk | Slash => Precedence::Product,
+            Asterisk => Precedence::Product,
             LParen => Precedence::Group,
             _ => Precedence::Lowest,
         })

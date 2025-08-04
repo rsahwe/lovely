@@ -31,16 +31,9 @@ impl<'src> Lexer<'src> {
         };
 
         match cur_char {
-            '#' => {
-                self.next();
-                while let Some((_, c)) = self.peek() {
-                    if c == '\n' {
-                        break;
-                    }
-                    self.next();
-                }
-                self.next_token()
-            }
+            '/' => self.make_single_char_token(cur_index, Slash),
+            '.' => self.make_single_char_token(cur_index, Dot),
+            ' ' => self.make_single_char_token(cur_index, NamespaceAccess),
             '+' => self.make_single_char_token(cur_index, Plus),
             '-' => {
                 self.next();
@@ -50,11 +43,22 @@ impl<'src> Lexer<'src> {
                     .is_some()
                 {
                     Token::new(RArrow, cur_index, 2)
+                } else if self
+                    .chars
+                    .next_if(|(_, next_char)| *next_char == '-')
+                    .is_some()
+                {
+                    while let Some((_, c)) = self.peek() {
+                        if c == '\n' {
+                            break;
+                        }
+                        self.next();
+                    }
+                    self.next_token()
                 } else {
                     Token::new(Minus, cur_index, 1)
                 }
             }
-            '/' => self.make_single_char_token(cur_index, Slash),
             '*' => self.make_single_char_token(cur_index, Asterisk),
             '&' => self.make_single_char_token(cur_index, BitAnd),
             '|' => self.make_single_char_token(cur_index, BitOr),
@@ -123,7 +127,6 @@ impl<'src> Lexer<'src> {
                     "read" => Token::new(Read, cur_index, 4),
                     "give" => Token::new(Give, cur_index, 4),
                     "break" => Token::new(Break, cur_index, 5),
-                    "pass" => Token::new(Pass, cur_index, 4),
                     "ret" => Token::new(Return, cur_index, 3),
                     "proto" => Token::new(Proto, cur_index, 5),
                     "impl" => Token::new(Impl, cur_index, 4),

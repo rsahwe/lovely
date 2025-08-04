@@ -5,7 +5,18 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"] }
+colored = "3.0.0"
 pretty_assertions = "1.4.1"
 
 [dev-dependencies]
 insta = { version = "1.43.1", features = ["glob"] }
+
+[lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+perf = "warn"
+correctness = "warn"
+suspicious = "warn"
+style = "warn"
+complexity = "warn"
+cargo = "warn"

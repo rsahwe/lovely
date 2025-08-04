@@ -1,6 +1,5 @@
-use std::fmt::Display;
-
 use crate::span::Span;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
@@ -11,7 +10,6 @@ pub enum TokenKind {
     Read,   // read
     Give,   // give
     Break,  // break
-    Pass,   // pass
     Return, // ret
     Proto,  // proto
     Impl,   // impl
@@ -20,21 +18,23 @@ pub enum TokenKind {
     False,  // false
 
     // syntax
-    LParen,      // (
-    RParen,      // )
-    LBrace,      // {
-    RBrace,      // }
-    Colon,       // :
-    Comma,       // ,
-    Tilde,       // ~
-    SingleEqual, // =
-    RArrow,      // ->
+    LParen,          // (
+    RParen,          // )
+    LBrace,          // {
+    RBrace,          // }
+    Colon,           // :
+    Comma,           // ,
+    Tilde,           // ~
+    SingleEqual,     // =
+    RArrow,          // ->
+    Slash,           // /
+    Dot,             // .
+    NamespaceAccess, // #
 
     // operators:
     ExclamationMark,    // !
     Plus,               // +
     Minus,              // -
-    Slash,              // /
     Asterisk,           // *
     BitAnd,             // &
     BitOr,              // |
@@ -63,7 +63,6 @@ impl Display for TokenKind {
             TokenKind::Read => "read",
             TokenKind::Give => "give",
             TokenKind::Break => "break",
-            TokenKind::Pass => "pass",
             TokenKind::Return => "ret",
             TokenKind::Proto => "proto",
             TokenKind::Impl => "impl",
@@ -79,10 +78,12 @@ impl Display for TokenKind {
             TokenKind::Tilde => "~",
             TokenKind::RArrow => "->",
             TokenKind::SingleEqual => "=",
+            TokenKind::Slash => "/",
+            TokenKind::Dot => ".",
+            TokenKind::NamespaceAccess => "#",
             TokenKind::ExclamationMark => "!",
             TokenKind::Plus => "+",
             TokenKind::Minus => "-",
-            TokenKind::Slash => "/",
             TokenKind::Asterisk => "*",
             TokenKind::BitAnd => "&",
             TokenKind::BitOr => "|",
