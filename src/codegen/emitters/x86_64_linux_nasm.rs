@@ -1,6 +1,7 @@
 use super::Emitter;
 use crate::ir::tac::{BasicBlock, Entity, Instruction, TempId, Value};
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write;
 
 pub struct CodeGenerator {
     text_section: String,
@@ -36,7 +37,6 @@ impl CodeGenerator {
                     self.rodata_section.push('\n');
                 }
             }
-            self.text_section.push('\n');
         } else {
             self.text_section += &block.label;
             self.current_function = Some(block.label.clone());
@@ -52,10 +52,13 @@ impl CodeGenerator {
                 for (index, param) in block.parameters.iter().enumerate() {
                     this_function_locals.insert(param.name.clone(), this_function_stack_offset);
                     this_function_stack_offset += param.ty.size_in_bytes();
-                    self.text_section
-                        .push_str(&format!("  push qword [rbp + {}]\n", (index + 1) * 8 + 8));
+                    let _ = writeln!(
+                        self.text_section,
+                        "  push qword [rbp + {}]",
+                        (index + 1) * 8 + 8
+                    );
                 }
-                self.text_section.push_str("\n");
+                self.text_section.push('\n');
             }
 
             self.local_vars
@@ -67,12 +70,13 @@ impl CodeGenerator {
                 self.instruction_codegen(instr);
                 self.text_section.push('\n');
             }
-            self.text_section.push('\n');
         }
+        self.text_section.push('\n');
     }
 
+    #[allow(clippy::too_many_lines)]
     fn instruction_codegen(&mut self, instr: &Instruction) {
-        self.text_section.push_str(&format!("  ; {}\n", instr));
+        let _ = writeln!(self.text_section, "  ; {instr}");
         match instr {
             Instruction::Add { dest, lhs, rhs } => {
                 if let Value::Temp(temp_id) = dest.value {
@@ -81,11 +85,9 @@ impl CodeGenerator {
                     let lhs_asm = self.entity_to_asm(lhs);
                     let rhs_asm = self.entity_to_asm(rhs);
 
-                    self.text_section
-                        .push_str(&format!("  mov rax, {lhs_asm}\n"));
-                    self.text_section
-                        .push_str(&format!("  add rax, {rhs_asm}\n"));
-                    self.text_section.push_str(&format!("  push qword rax\n"));
+                    let _ = writeln!(self.text_section, "  mov rax, {lhs_asm}");
+                    let _ = writeln!(self.text_section, "  add rax, {rhs_asm}");
+                    let _ = writeln!(self.text_section, "  push qword rax");
                 } else {
                     unreachable!()
                 }
@@ -97,11 +99,9 @@ impl CodeGenerator {
                     let lhs_asm = self.entity_to_asm(lhs);
                     let rhs_asm = self.entity_to_asm(rhs);
 
-                    self.text_section
-                        .push_str(&format!("  mov rax, {lhs_asm}\n"));
-                    self.text_section
-                        .push_str(&format!("  sub rax, {rhs_asm}\n"));
-                    self.text_section.push_str(&format!("  push qword rax\n"));
+                    let _ = writeln!(self.text_section, "  mov rax, {lhs_asm}");
+                    let _ = writeln!(self.text_section, "  sub rax, {rhs_asm}");
+                    let _ = writeln!(self.text_section, "  push qword rax");
                 } else {
                     unreachable!()
                 }
@@ -113,11 +113,9 @@ impl CodeGenerator {
                     let lhs_asm = self.entity_to_asm(lhs);
                     let rhs_asm = self.entity_to_asm(rhs);
 
-                    self.text_section
-                        .push_str(&format!("  mov rax, {lhs_asm}\n"));
-                    self.text_section
-                        .push_str(&format!("  imul rax, {rhs_asm}\n"));
-                    self.text_section.push_str(&format!("  push qword rax\n"));
+                    let _ = writeln!(self.text_section, "  mov rax, {lhs_asm}");
+                    let _ = writeln!(self.text_section, "  imul rax, {rhs_asm}");
+                    let _ = writeln!(self.text_section, "  push qword rax");
                 } else {
                     unreachable!()
                 }
@@ -129,12 +127,10 @@ impl CodeGenerator {
                     let dividend_asm = self.entity_to_asm(lhs);
                     let divisor_asm = self.entity_to_asm(rhs);
 
-                    self.text_section
-                        .push_str(&format!("  mov rax, {dividend_asm}\n"));
-                    self.text_section.push_str("  cqo\n");
-                    self.text_section
-                        .push_str(&format!("  idiv qword {divisor_asm}\n"));
-                    self.text_section.push_str("  push qword rax\n");
+                    let _ = writeln!(self.text_section, "  mov rax, {dividend_asm}");
+                    let _ = writeln!(self.text_section, "  cqo");
+                    let _ = writeln!(self.text_section, "  idiv qword {divisor_asm}");
+                    let _ = writeln!(self.text_section, "  push qword rax");
                 } else {
                     unreachable!()
                 }
@@ -151,8 +147,7 @@ impl CodeGenerator {
                     *this_function_stack_offset += ty.size_in_bytes();
 
                     let src_asm = self.entity_to_asm(src);
-                    self.text_section
-                        .push_str(&format!("  push qword {}\n", src_asm));
+                    let _ = writeln!(self.text_section, "  push qword {src_asm}");
                 }
                 _ => unreachable!(),
             },
@@ -167,35 +162,30 @@ impl CodeGenerator {
 
                     for arg in args.iter().rev() {
                         let arg_asm = self.entity_to_asm(arg);
-                        self.text_section
-                            .push_str(&format!("  push qword {}\n", arg_asm));
+                        let _ = writeln!(self.text_section, "  push qword {arg_asm}");
                     }
 
-                    self.text_section
-                        .push_str(&format!("  call {callee_asm}\n"));
-                    self.text_section
-                        .push_str(&format!("  add rsp, {}\n", args.len() * 8));
-                    self.text_section.push_str(&format!("  push qword rax\n"));
+                    let _ = writeln!(self.text_section, "  call {callee_asm}");
+                    let _ = writeln!(self.text_section, "  add rsp, {}", args.len() * 8);
+                    let _ = writeln!(self.text_section, "  push qword rax");
                 } else {
                     unreachable!()
                 }
             }
             Instruction::Goto(label) => {
-                self.text_section.push_str(&format!("  jmp {label}\n"));
+                let _ = writeln!(self.text_section, "  jmp {label}");
             }
             Instruction::Ret(entity) => {
                 let entity_asm = self.entity_to_asm(entity);
-                self.text_section
-                    .push_str(&format!("  mov rax, {entity_asm}\n"));
-                self.text_section.push_str("  leave\n");
-                self.text_section.push_str("  ret");
+                let _ = writeln!(self.text_section, "  mov rax, {entity_asm}");
+                let _ = writeln!(self.text_section, "  leave");
+                let _ = writeln!(self.text_section, "  ret");
             }
             Instruction::Exit(entity) => {
                 self.text_section.push_str("  mov rax, 60\n");
                 let entity_asm = self.entity_to_asm(entity);
-                self.text_section
-                    .push_str(&format!("  mov rdi, {}\n", entity_asm));
-                self.text_section.push_str("  syscall\n");
+                let _ = writeln!(self.text_section, "  mov rdi, {entity_asm}");
+                let _ = writeln!(self.text_section, "  syscall");
             }
         }
     }
@@ -212,8 +202,7 @@ impl CodeGenerator {
                 ) => {
                     self.global_vars.insert(name.to_string());
                     let entity_asm = self.entity_to_asm(src);
-                    self.rodata_section
-                        .push_str(&format!("  {name}: dq {entity_asm}"));
+                    let _ = writeln!(self.rodata_section, "  {name}: dq {entity_asm}");
                 }
                 _ => unreachable!("only variable declarations are allowed in the global scope"),
             },
@@ -229,7 +218,7 @@ impl CodeGenerator {
                     "[rbp - {}]",
                     this_function_locals
                         .get(&format!("t{temp_id}"))
-                        .expect(&format!("local var not found: t{temp_id}"))
+                        .unwrap_or_else(|| panic!("local var not found: t{temp_id}"))
                         + 8
                 )
             }
@@ -245,7 +234,7 @@ impl CodeGenerator {
                     "[rbp - {}]",
                     this_function_locals
                         .get(name)
-                        .expect(&format!("local var not found: {name}"))
+                        .unwrap_or_else(|| panic!("local var not found: {name}"))
                         + 8
                 )
             }
@@ -257,7 +246,7 @@ impl CodeGenerator {
         let name = format!("t{temp_id}");
         let (this_function_locals, this_function_stack_offset) = self.function_locals_and_offset();
 
-        this_function_locals.insert(name.to_string(), *this_function_stack_offset);
+        this_function_locals.insert(name, *this_function_stack_offset);
         *this_function_stack_offset += dest_entity.ty.size_in_bytes();
     }
 

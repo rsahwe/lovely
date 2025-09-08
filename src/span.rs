@@ -5,7 +5,7 @@ pub struct Span {
 }
 
 impl Span {
-    pub fn from_range(start: usize, end: usize) -> Self {
+    pub const fn from_range(start: usize, end: usize) -> Self {
         Self { start, end }
     }
 
@@ -23,7 +23,7 @@ impl Span {
             match byte {
                 '\n' => {
                     line += 1;
-                    column = 1
+                    column = 1;
                 }
                 _ => column += 1,
             }
@@ -34,11 +34,11 @@ impl Span {
     }
 
     pub fn line_col_start(&self, text: &str) -> (usize, usize) {
-        Span::line_col(text, self.start)
+        Self::line_col(text, self.start)
     }
 
     pub fn line_col_end(&self, text: &str) -> (usize, usize) {
-        Span::line_col(text, self.end)
+        Self::line_col(text, self.end)
     }
 
     pub fn slice<'src>(&self, source: &'src str) -> &'src str {

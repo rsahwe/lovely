@@ -9,7 +9,7 @@ pub struct Expression {
     pub kind: ExpressionKind,
 }
 impl Expression {
-    pub fn new(kind: ExpressionKind, span: Span) -> Self {
+    pub const fn new(kind: ExpressionKind, span: Span) -> Self {
         Self { span, kind }
     }
 }
@@ -61,16 +61,16 @@ pub enum ExpressionKind {
 
 impl ExpressionKind {
     pub fn is_const(&self) -> bool {
+        #[allow(clippy::enum_glob_use)]
         use crate::parser::ast::ExpressionKind::*;
 
         match self {
-            BoolLiteral(_) | IntLiteral(_) | Ident(_) | Function { .. } => true,
             Block(expressions) => expressions.iter().all(|expr| expr.kind.is_const()),
             Prefix { expression, .. } => expression.kind.is_const(),
             Infix { left, right, .. } => left.kind.is_const() && right.kind.is_const(),
             VariableDecl { value, mutable, .. } => !mutable && value.kind.is_const(),
             FunctionCall { .. } => false,
-            Use { .. } => true,
+            BoolLiteral(_) | IntLiteral(_) | Ident(_) | Function { .. } | Use { .. } => true,
         }
     }
 }

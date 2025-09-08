@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+#[allow(clippy::enum_glob_use)]
 use crate::{
     lexer::{
         Lexer,
@@ -30,15 +31,15 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::NoToken => write!(f, "no token"),
-            Error::NoPrefixParseFn(token) => {
-                write!(f, "no prefix parse function for token {:?}", token)
+            Self::NoToken => write!(f, "no token"),
+            Self::NoPrefixParseFn(token) => {
+                write!(f, "no prefix parse function for token {token:?}")
             }
-            Error::Expected { expected, got } => write!(f, "expected {}, got {}", expected, got),
-            Error::Syntax(msg) => write!(f, "syntax error: {}", msg),
-            Error::UnexpectedEof => write!(f, "unexpected end of file"),
-            Error::IllegalGlobalExpression(expr) => {
-                write!(f, "illegal global expression: {:?}", expr)
+            Self::Expected { expected, got } => write!(f, "expected {expected}, got {got}"),
+            Self::Syntax(msg) => write!(f, "syntax error: {msg}"),
+            Self::UnexpectedEof => write!(f, "unexpected end of file"),
+            Self::IllegalGlobalExpression(expr) => {
+                write!(f, "illegal global expression: {expr:?}")
             }
         }
     }
@@ -78,73 +79,73 @@ impl<'src> Parser<'src> {
     pub fn parse(&mut self) -> Result<Program, Error> {
         let mut exprs = vec![];
         while self.lexer.peek().is_some() {
-            exprs.push(self.parse_expression(Precedence::Lowest)?);
+            exprs.push(self.parse_expression(&Precedence::Lowest)?);
         }
         Ok(Program(exprs))
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, Error> {
+    fn parse_expression(&mut self, precedence: &Precedence) -> Result<Expression, Error> {
         let mut expr = self.prefix_parse_fn()?(self)?;
 
-        while self.cur_precedence()? > precedence {
+        while &self.cur_precedence() > precedence {
             match &self.peek_kind() {
                 IntLiteral => return Err(Error::syntax_err("consecutive ints")),
                 Eof => return Ok(expr),
                 Plus => {
                     expr =
-                        self.parse_infix_expression(expr, InfixOperator::Plus, Precedence::Sum)?;
+                        self.parse_infix_expression(expr, InfixOperator::Plus, &Precedence::Sum)?;
                 }
                 Minus => {
                     expr =
-                        self.parse_infix_expression(expr, InfixOperator::Minus, Precedence::Sum)?;
+                        self.parse_infix_expression(expr, InfixOperator::Minus, &Precedence::Sum)?;
                 }
                 Asterisk => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::Multiply,
-                        Precedence::Product,
+                        &Precedence::Product,
                     )?;
                 }
                 GreaterThan => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::GreaterThan,
-                        Precedence::Comparison,
+                        &Precedence::Comparison,
                     )?;
                 }
                 LessThan => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::LessThan,
-                        Precedence::Comparison,
+                        &Precedence::Comparison,
                     )?;
                 }
                 GreaterThanOrEqual => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::GreaterThanOrEqual,
-                        Precedence::Comparison,
+                        &Precedence::Comparison,
                     )?;
                 }
                 LessThanOrEqual => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::LessThanOrEqual,
-                        Precedence::Comparison,
+                        &Precedence::Comparison,
                     )?;
                 }
                 DoubleEqual => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::Equal,
-                        Precedence::Equality,
+                        &Precedence::Equality,
                     )?;
                 }
                 NotEqual => {
                     expr = self.parse_infix_expression(
                         expr,
                         InfixOperator::NotEqual,
-                        Precedence::Equality,
+                        &Precedence::Equality,
                     )?;
                 }
                 tok => return Err(Error::syntax_err(&format!("invalid operator: {tok}"))),
@@ -158,6 +159,7 @@ impl<'src> Parser<'src> {
         }
     }
 
+    #[allow(clippy::redundant_closure_for_method_calls)]
     fn prefix_parse_fn(&mut self) -> Result<PrefixParseFn, Error> {
         let peek_token_kind = self.peek_kind();
         match peek_token_kind {
@@ -173,8 +175,8 @@ impl<'src> Parser<'src> {
                     LParen => Ok(Box::new(move |parser| {
                         parser.parse_function_call(&name, span.start)
                     })),
-                    _ => Ok(Box::new(move |parser| {
-                        parser.parse_variable_ident(&name, span)
+                    _ => Ok(Box::new(move |_| {
+                        Ok(Parser::parse_variable_ident(&name, span))
                     })),
                 }
             }
@@ -188,9 +190,9 @@ impl<'src> Parser<'src> {
 
     fn parse_prefix_expression(&mut self, operator: PrefixOperator) -> Result<Expression, Error> {
         let Span { start, .. } = self.expect_token(match operator {
-            PrefixOperator::LogicalNot => ExclamationMark,
+            PrefixOperator::LogicalNot => &ExclamationMark,
         })?;
-        let expr = self.parse_expression(Precedence::Prefix)?;
+        let expr = self.parse_expression(&Precedence::Prefix)?;
         let span = expr.span;
         Ok(Expression::new(
             ExpressionKind::Prefix {
@@ -205,7 +207,7 @@ impl<'src> Parser<'src> {
         &mut self,
         lhs: Expression,
         operator: InfixOperator,
-        precedence: Precedence,
+        precedence: &Precedence,
     ) -> Result<Expression, Error> {
         self.lexer.next();
         let rhs = self.parse_expression(precedence)?;
@@ -229,22 +231,19 @@ impl<'src> Parser<'src> {
     fn parse_bool_literal(&mut self) -> Result<Expression, Error> {
         match self.peek_kind() {
             True => {
-                let span = self.expect_token(True)?;
+                let span = self.expect_token(&True)?;
                 Ok(Expression::new(ExpressionKind::BoolLiteral(true), span))
             }
             False => {
-                let span = self.expect_token(False)?;
+                let span = self.expect_token(&False)?;
                 Ok(Expression::new(ExpressionKind::BoolLiteral(false), span))
             }
             tok => Err(Error::expected("true or false", &tok.to_string())),
         }
     }
 
-    fn parse_variable_ident(&mut self, name: &str, span: Span) -> Result<Expression, Error> {
-        Ok(Expression::new(
-            ExpressionKind::Ident(name.to_string()),
-            span,
-        ))
+    fn parse_variable_ident(name: &str, span: Span) -> Expression {
+        Expression::new(ExpressionKind::Ident(name.to_string()), span)
     }
 
     fn parse_type(&mut self) -> Result<Type, Error> {
@@ -253,12 +252,12 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_block_expression(&mut self) -> Result<Expression, Error> {
-        let start_span = self.expect_token(LBrace)?;
+        let start_span = self.expect_token(&LBrace)?;
         let mut exprs = vec![];
         while self.peek_kind() != &RBrace {
-            exprs.push(self.parse_expression(Precedence::Lowest)?);
+            exprs.push(self.parse_expression(&Precedence::Lowest)?);
         }
-        let end_span = self.expect_token(RBrace)?;
+        let end_span = self.expect_token(&RBrace)?;
         Ok(Expression::new(
             ExpressionKind::Block(exprs),
             Span::from_range(start_span.start, end_span.end),
@@ -270,21 +269,20 @@ impl<'src> Parser<'src> {
         fn_name: &str,
         start_position: usize,
     ) -> Result<Expression, Error> {
-        self.expect_token(LParen)?;
+        self.expect_token(&LParen)?;
 
         let mut arguments = vec![];
 
         while self.peek_kind() != &RParen {
             arguments.push(self.parse_function_argument()?);
             if self.peek_kind() == &Comma {
-                self.expect_token(Comma)?;
-                continue;
+                self.expect_token(&Comma)?;
             } else {
                 break;
             }
         }
 
-        let end_span = self.expect_token(RParen)?;
+        let end_span = self.expect_token(&RParen)?;
 
         Ok(Expression::new(
             ExpressionKind::FunctionCall {
@@ -301,17 +299,17 @@ impl<'src> Parser<'src> {
 
         let tok = self.lexer.peek().ok_or(Error::UnexpectedEof)?;
         let span = tok.span;
-        if let Identifier = tok.kind {
+        if tok.kind == Identifier {
             let (name, _) = self.expect_ident()?;
             if self.peek_kind() == &Colon {
-                self.expect_token(Colon)?;
+                self.expect_token(&Colon)?;
                 label = Some(name);
-                value = self.parse_expression(Precedence::Lowest)?;
+                value = self.parse_expression(&Precedence::Lowest)?;
             } else {
                 value = Expression::new(ExpressionKind::Ident(name), span);
             }
         } else {
-            value = self.parse_expression(Precedence::Lowest)?;
+            value = self.parse_expression(&Precedence::Lowest)?;
         }
 
         Ok(FunctionArgument { label, value })
@@ -322,12 +320,13 @@ impl<'src> Parser<'src> {
         name: &str,
         start_position: usize,
     ) -> Result<Expression, Error> {
-        self.expect_token(Colon)?;
+        self.expect_token(&Colon)?;
 
-        let mut ty = None;
-        if self.peek_kind() == &Identifier || self.peek_kind() == &Fun {
-            ty = Some(self.parse_type()?);
-        }
+        let ty = if self.peek_kind() == &Identifier || self.peek_kind() == &Fun {
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
 
         #[allow(clippy::needless_late_init)]
         let value: Expression;
@@ -335,14 +334,14 @@ impl<'src> Parser<'src> {
 
         match self.peek_kind() {
             Colon => {
-                self.expect_token(Colon)?;
+                self.expect_token(&Colon)?;
                 mutable = false;
-                value = self.parse_expression(Precedence::Lowest)?;
+                value = self.parse_expression(&Precedence::Lowest)?;
             }
             SingleEqual => {
-                self.expect_token(SingleEqual)?;
+                self.expect_token(&SingleEqual)?;
                 mutable = true;
-                value = self.parse_expression(Precedence::Lowest)?;
+                value = self.parse_expression(&Precedence::Lowest)?;
             }
             tok => return Err(Error::expected(": or =", &tok.to_string())),
         }
@@ -360,34 +359,33 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_function_expression(&mut self) -> Result<Expression, Error> {
-        let start_span = self.expect_token(Fun)?;
-        self.expect_token(LParen)?;
+        let start_span = self.expect_token(&Fun)?;
+        self.expect_token(&LParen)?;
 
         let mut parameters = vec![];
 
         while self.peek_kind() != &RParen {
             parameters.push(self.parse_function_parameter()?);
             if self.peek_kind() == &Comma {
-                self.expect_token(Comma)?;
-                continue;
+                self.expect_token(&Comma)?;
             } else {
                 break;
             }
         }
 
-        self.expect_token(RParen)?;
+        self.expect_token(&RParen)?;
 
-        let mut return_type = None;
+        let return_type = if matches!(self.peek_kind(), RArrow) {
+            self.expect_token(&RArrow)?;
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
 
-        if let RArrow = self.peek_kind() {
-            self.expect_token(RArrow)?;
-            return_type = Some(self.parse_type()?);
-        }
-
-        self.expect_token(Colon)?;
+        self.expect_token(&Colon)?;
 
         self.inside_function += 1;
-        let body = self.parse_expression(Precedence::Lowest)?;
+        let body = self.parse_expression(&Precedence::Lowest)?;
         self.inside_function -= 1;
 
         let end_span = body.span;
@@ -408,23 +406,23 @@ impl<'src> Parser<'src> {
         match self.peek_kind() {
             Mut => {
                 modifier = ParameterModifier::Mut;
-                self.expect_token(Mut)?;
+                self.expect_token(&Mut)?;
             }
             Take => {
                 modifier = ParameterModifier::Take;
-                self.expect_token(Take)?;
+                self.expect_token(&Take)?;
             }
             Read => {
-                self.expect_token(Read)?;
+                self.expect_token(&Read)?;
             }
             _ => {}
         }
 
         match self.peek_kind() {
             Tilde => {
-                self.expect_token(Tilde)?;
+                self.expect_token(&Tilde)?;
                 let (name, _) = self.expect_ident()?;
-                self.expect_token(Colon)?;
+                self.expect_token(&Colon)?;
                 let ty = self.parse_type()?;
                 Ok(FunctionParameter {
                     modifier,
@@ -436,20 +434,19 @@ impl<'src> Parser<'src> {
             }
             Identifier => {
                 let (first, _) = self.expect_ident()?;
-                let mut second = None;
-                if let Identifier = self.peek_kind() {
+                let second = if matches!(self.peek_kind(), Identifier) {
                     let (name, _) = self.expect_ident()?;
-                    second = Some(name);
-                }
-                self.expect_token(Colon)?;
+                    Some(name)
+                } else {
+                    None
+                };
+                self.expect_token(&Colon)?;
                 let ty = self.parse_type()?;
                 Ok(FunctionParameter {
                     modifier,
-                    internal_name: if let Some(second_ident) = &second {
-                        second_ident.to_string()
-                    } else {
-                        first.clone()
-                    },
+                    internal_name: second
+                        .as_ref()
+                        .map_or_else(|| first.clone(), std::string::ToString::to_string),
                     external_name: if second.is_some() { Some(first) } else { None },
                     ty,
                     labeled_at_callsite: true,
@@ -459,22 +456,22 @@ impl<'src> Parser<'src> {
         }
     }
 
-    fn expect_token(&mut self, kind: TokenKind) -> Result<Span, Error> {
+    fn expect_token(&mut self, kind: &TokenKind) -> Result<Span, Error> {
         let tok = self.lexer.next().ok_or(Error::UnexpectedEof)?;
-        if tok.kind != kind {
+        if &tok.kind == kind {
+            Ok(tok.span)
+        } else {
             Err(Error::syntax_err(&format!(
                 "unexpected token: {}",
                 tok.kind
             )))
-        } else {
-            Ok(tok.span)
         }
     }
 
     fn expect_int(&mut self) -> Result<(isize, Span), Error> {
         let token = self.lexer.peek().ok_or(Error::UnexpectedEof)?;
         let span = token.span;
-        if let IntLiteral = token.kind {
+        if token.kind == IntLiteral {
             self.lexer.next();
             Ok((span.slice(&self.source).parse().unwrap(), span))
         } else {
@@ -486,7 +483,7 @@ impl<'src> Parser<'src> {
         let token = self.lexer.peek().ok_or(Error::UnexpectedEof)?;
         let kind = token.kind.clone();
         let span = token.span;
-        if let Identifier = kind {
+        if kind == Identifier {
             self.lexer.next();
             // up to you whether you want to return a `String` or a `&str`
             Ok((span.slice(&self.source).to_owned(), span))
@@ -495,15 +492,15 @@ impl<'src> Parser<'src> {
         }
     }
 
-    fn cur_precedence(&mut self) -> Result<Precedence, Error> {
-        Ok(match self.peek_kind() {
+    fn cur_precedence(&mut self) -> Precedence {
+        match self.peek_kind() {
             DoubleEqual | NotEqual => Precedence::Equality,
             LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual => Precedence::Comparison,
             Plus | Minus => Precedence::Sum,
             Asterisk => Precedence::Product,
             LParen => Precedence::Group,
             _ => Precedence::Lowest,
-        })
+        }
     }
 
     fn cur_kind(&mut self) -> TokenKind {

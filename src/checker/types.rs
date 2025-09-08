@@ -8,7 +8,7 @@ pub struct ScopedType {
 
 impl ScopedType {
     pub fn named(name: &str, scope_id: ScopeId) -> Self {
-        ScopedType {
+        Self {
             kind: TypeKind::Name(name.to_string()),
             scope_id,
         }

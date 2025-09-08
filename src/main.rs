@@ -41,11 +41,16 @@ fn main() {
 
     match cli.command {
         Commands::Build { path } => {
-            println!("");
-            let Ok(_) = Blossom::build(path) else {
-                blossom::printer::error("That's not a directory you silly!\n");
-                return;
-            };
+            println!();
+            let res = Blossom::build(path);
+            match res {
+                Ok(()) => {
+                    blossom::printer::success("Build complete!");
+                }
+                Err(err) => {
+                    blossom::printer::error(&format!("Error: {err}"));
+                }
+            }
             println!("\n");
         }
     }

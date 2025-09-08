@@ -14,7 +14,7 @@ impl ScopedVariable {
         type_id: TypeId,
         borrow_status: BorrowStatus,
     ) -> Self {
-        ScopedVariable {
+        Self {
             name: name.to_string(),
             scope_id,
             type_id,

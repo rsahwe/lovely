@@ -31,42 +31,46 @@ pub enum ErrorKind {
     },
 }
 impl Error {
-    pub fn type_mismatch(expected: TypeId, got: TypeId, span: Span) -> Error {
-        Error {
+    pub const fn type_mismatch(expected: TypeId, got: TypeId, span: Span) -> Self {
+        Self {
             span,
             kind: ErrorKind::TypeMismatch { expected, got },
         }
     }
-    pub fn variable_not_found(name: &str, span: Span) -> Error {
-        Error {
+    pub fn variable_not_found(name: &str, span: Span) -> Self {
+        Self {
             span,
             kind: ErrorKind::VariableNotFound {
                 name: name.to_string(),
             },
         }
     }
-    pub fn type_not_found(ty: Type, span: Span) -> Error {
-        Error {
+    pub const fn type_not_found(ty: Type, span: Span) -> Self {
+        Self {
             span,
             kind: ErrorKind::TypeNotFound { ty },
         }
     }
-    pub fn variable_is_not_a_function(name: &str, span: Span) -> Error {
-        Error {
+    pub fn variable_is_not_a_function(name: &str, span: Span) -> Self {
+        Self {
             span,
             kind: ErrorKind::VariableIsNotAFunction {
                 name: name.to_string(),
             },
         }
     }
-    pub fn incorrect_arg_count(expected: usize, got: usize, span: Span) -> Error {
-        Error {
+    pub const fn incorrect_arg_count(expected: usize, got: usize, span: Span) -> Self {
+        Self {
             span,
             kind: ErrorKind::IncorrectArgCount { expected, got },
         }
     }
-    pub fn incorrect_arg_label(expected: Option<String>, got: Option<String>, span: Span) -> Error {
-        Error {
+    pub const fn incorrect_arg_label(
+        expected: Option<String>,
+        got: Option<String>,
+        span: Span,
+    ) -> Self {
+        Self {
             span,
             kind: ErrorKind::IncorrectArgLabel { expected, got },
         }

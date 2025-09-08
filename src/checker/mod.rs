@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+#[allow(clippy::enum_glob_use)]
 use crate::{
     parser::ast::{
         Expression, ExpressionKind,
@@ -63,16 +64,10 @@ impl Checker {
     fn lookup_type(&self, ty: &Type, scope_id: ScopeId) -> Option<TypeId> {
         let cur_scope = &self.scopes[scope_id];
         let Type::Ident(name) = ty;
-        if let Some(type_id) = self.types.iter().position(|t| match &t.kind {
+        self.types.iter().position(|t| match &t.kind {
             TypeKind::Name(type_name) => name == type_name,
             TypeKind::Function { .. } => false, // TODO: handle function types
-        } && t.scope_id == scope_id) {
-            Some(type_id)
-        } else if let Some(parent_id) = cur_scope.parent_scope {
-            self.lookup_type(ty, parent_id)
-        } else {
-            None
-        }
+        } && t.scope_id == scope_id).map_or_else(|| cur_scope.parent_scope.and_then(|parent_id| self.lookup_type(ty, parent_id)), Some)
     }
 
     fn add_type(&mut self, kind: TypeKind) -> TypeId {
@@ -158,19 +153,20 @@ impl Checker {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     fn check_expression(
         &mut self,
         expr: &Expression,
         type_hint: Option<TypeId>,
     ) -> Result<CheckedExpression, Error> {
         match &expr.kind {
-            ExpressionKind::BoolLiteral(value) => self.typed_expression(
+            ExpressionKind::BoolLiteral(value) => Self::typed_expression(
                 CheckedExpressionData::BoolLiteral(*value),
                 expr.span,
                 BOOL_ID,
                 type_hint,
             ),
-            ExpressionKind::IntLiteral(value) => self.typed_expression(
+            ExpressionKind::IntLiteral(value) => Self::typed_expression(
                 CheckedExpressionData::IntLiteral(*value),
                 expr.span,
                 INT_ID,
@@ -197,7 +193,7 @@ impl Checker {
 
                 self.cur_scope = original_scope;
 
-                self.typed_expression(
+                Self::typed_expression(
                     CheckedExpressionData::Block(checked_exprs),
                     expr.span,
                     type_id,
@@ -210,7 +206,7 @@ impl Checker {
             } => match operator {
                 LogicalNot => {
                     let res = self.check_expression(expression, Some(BOOL_ID))?;
-                    self.typed_expression(
+                    Self::typed_expression(
                         CheckedExpressionData::Prefix {
                             operator: *operator,
                             expression: Box::new(res),
@@ -230,7 +226,7 @@ impl Checker {
                 Plus | Minus | Divide | Multiply => {
                     let left = self.check_expression(left, Some(INT_ID))?;
                     let right = self.check_expression(right, Some(INT_ID))?;
-                    self.typed_expression(
+                    Self::typed_expression(
                         CheckedExpressionData::Infix {
                             left: Box::new(left),
                             operator: *operator,
@@ -244,7 +240,7 @@ impl Checker {
                 LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual => {
                     let left = self.check_expression(left, Some(INT_ID))?;
                     let right = self.check_expression(right, Some(INT_ID))?;
-                    self.typed_expression(
+                    Self::typed_expression(
                         CheckedExpressionData::Infix {
                             left: Box::new(left),
                             operator: *operator,
@@ -260,10 +256,8 @@ impl Checker {
                 Equal | NotEqual => {
                     let left = self.check_expression(left, None)?;
                     let right = self.check_expression(right, None)?;
-                    if left.type_id != right.type_id {
-                        Err(Error::type_mismatch(left.type_id, right.type_id, expr.span))
-                    } else {
-                        self.typed_expression(
+                    if left.type_id == right.type_id {
+                        Self::typed_expression(
                             CheckedExpressionData::Infix {
                                 left: Box::new(left),
                                 operator: *operator,
@@ -273,6 +267,8 @@ impl Checker {
                             BOOL_ID,
                             type_hint,
                         )
+                    } else {
+                        Err(Error::type_mismatch(left.type_id, right.type_id, expr.span))
                     }
                 }
             },
@@ -296,7 +292,7 @@ impl Checker {
                         BorrowStatus::ImmutableOwned
                     },
                 );
-                self.typed_expression(
+                Self::typed_expression(
                     CheckedExpressionData::VariableDecl {
                         name: name.to_string(),
                         value: Box::new(r_value),
@@ -310,7 +306,7 @@ impl Checker {
             }
             ExpressionKind::Ident(name) => {
                 if let Some((var_id, var_type)) = self.lookup_variable(name, self.cur_scope) {
-                    self.typed_expression(
+                    Self::typed_expression(
                         CheckedExpressionData::Ident {
                             name: name.to_string(),
                             variable_id: var_id,
@@ -361,13 +357,11 @@ impl Checker {
                 }
 
                 // get return type
-                let return_type = if let Some(ty) = return_type {
-                    ty
-                } else {
-                    &Type::Ident("Unit".to_string())
-                };
-                let Some(return_type_id) = self.lookup_type(return_type, self.cur_scope) else {
-                    return Err(Error::type_not_found(return_type.clone(), expr.span));
+                let return_type = return_type
+                    .as_ref()
+                    .map_or_else(|| Type::Ident("Unit".to_string()), std::clone::Clone::clone);
+                let Some(return_type_id) = self.lookup_type(&return_type, self.cur_scope) else {
+                    return Err(Error::type_not_found(return_type, expr.span));
                 };
 
                 let body = self.check_expression(body, Some(return_type_id))?;
@@ -390,7 +384,7 @@ impl Checker {
 
                 self.cur_scope = original_scope;
 
-                self.typed_expression(
+                Self::typed_expression(
                     CheckedExpressionData::Function {
                         parameters: checked_params,
                         return_type: return_type_id,
@@ -420,7 +414,7 @@ impl Checker {
 
                 'outer: for (var_id, type_id) in self
                     .lookup_variable_all(name, self.cur_scope)
-                    .ok_or(Error::variable_not_found(name, expr.span))?
+                    .ok_or_else(|| Error::variable_not_found(name, expr.span))?
                 {
                     let ScopedType {
                         scope_id: _,
@@ -467,7 +461,7 @@ impl Checker {
                         }
                     }
 
-                    return self.typed_expression(
+                    return Self::typed_expression(
                         CheckedExpressionData::FunctionCall {
                             name: name.to_string(),
                             arguments: args,
@@ -496,7 +490,6 @@ impl Checker {
     }
 
     fn typed_expression(
-        &self,
         res: CheckedExpressionData,
         span: Span,
         res_type: TypeId,
@@ -525,7 +518,7 @@ pub struct CheckedExpression {
     pub data: CheckedExpressionData,
 }
 impl CheckedExpression {
-    pub fn new(data: CheckedExpressionData, type_id: TypeId) -> Self {
+    pub const fn new(data: CheckedExpressionData, type_id: TypeId) -> Self {
         Self { type_id, data }
     }
 }

@@ -21,7 +21,9 @@ impl<'src> Lexer<'src> {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn next_token(&mut self) -> Token {
+        #[allow(clippy::enum_glob_use)]
         use tokens::TokenKind::*;
 
         self.skip_whitespace();
@@ -167,7 +169,7 @@ impl<'src> Lexer<'src> {
             let (l, _) = self.next().unwrap();
             last = l;
         }
-        &self.content[position..last + 1]
+        &self.content[position..=last]
     }
 
     fn read_int(&mut self, position: usize) -> usize {
@@ -176,7 +178,7 @@ impl<'src> Lexer<'src> {
             let (l, _) = self.next().unwrap();
             last = l;
         }
-        let number = &self.content[position..last + 1];
+        let number = &self.content[position..=last];
         number.len()
     }
 

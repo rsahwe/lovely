@@ -1,7 +1,11 @@
 // lovingly named by japi (July 24, 2025)
 
 use crate::parser;
-use std::{error::Error, fs, path::PathBuf};
+use std::{
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub mod printer;
 
@@ -10,12 +14,19 @@ pub struct Blossom {}
 impl Blossom {
     pub fn build(path: String) -> Result<(), Box<dyn Error>> {
         let path_buf = PathBuf::from(path);
-        let file_tree = collect_files(path_buf)?;
+        let file_tree = collect_files(&path_buf)?;
         let lovely_files = file_tree
-            .filter(&|name, _| name.ends_with(".lv"))
+            .filter(&|name, _| {
+                std::path::Path::new(name)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("lv"))
+            })
             .expect("Expected a directory");
-        let _parsed_lovely_files =
-            lovely_files.try_map(&|s| parser::Parser::new(s).parse().map_err(|e| e.into()))?;
+        let _parsed_lovely_files = lovely_files.try_map(&|s| {
+            parser::Parser::new(s)
+                .parse()
+                .map_err(std::convert::Into::into)
+        })?;
 
         println!("Building your project...");
 
@@ -23,7 +34,7 @@ impl Blossom {
     }
 }
 
-fn collect_files(path: PathBuf) -> Result<FileTreeNode<String>, Box<dyn Error>> {
+fn collect_files(path: &Path) -> Result<FileTreeNode<String>, Box<dyn Error>> {
     if !path.is_dir() {
         printer::error("That's not a directory you silly!");
         return Err("Not a directory".into());
@@ -43,11 +54,11 @@ fn collect_files(path: PathBuf) -> Result<FileTreeNode<String>, Box<dyn Error>> 
 
     for dir_entry in dir {
         if dir_entry.path().is_dir() {
-            children.push(collect_files(dir_entry.path())?);
+            children.push(collect_files(&dir_entry.path())?);
         } else {
             let contents = fs::read_to_string(dir_entry.path())?;
             let name = dir_entry.path().to_str().unwrap().to_string();
-            children.push(FileTreeNode::File { name, contents })
+            children.push(FileTreeNode::File { name, contents });
         }
     }
 
@@ -72,19 +83,19 @@ enum FileTreeNode<T> {
 }
 
 impl<T> FileTreeNode<T> {
-    fn filter<F>(&self, f: &F) -> Option<FileTreeNode<T>>
+    fn filter<F>(&self, f: &F) -> Option<Self>
     where
         F: Fn(&String, &T) -> bool,
         T: Clone,
     {
         match self {
-            FileTreeNode::Directory { children, name } => Some(FileTreeNode::Directory {
+            Self::Directory { children, name } => Some(Self::Directory {
                 name: name.clone(),
                 children: children.iter().filter_map(|c| c.filter(f)).collect(),
             }),
-            FileTreeNode::File { name, contents } => {
+            Self::File { name, contents } => {
                 if f(name, contents) {
-                    Some(FileTreeNode::File {
+                    Some(Self::File {
                         name: name.clone(),
                         contents: contents.clone(),
                     })
@@ -99,7 +110,7 @@ impl<T> FileTreeNode<T> {
         match self {
             Self::Directory { name, children } => FileTreeNode::Directory {
                 name: name.clone(),
-                children: children.iter().map(|c| FileTreeNode::map(c, f)).collect(),
+                children: children.iter().map(|c| Self::map(c, f)).collect(),
             },
             Self::File { name, contents } => FileTreeNode::File {
                 name: name.clone(),

@@ -37,7 +37,9 @@ impl IRGenerator {
             }],
             current_block: 0,
             variables: vec![],
-            types: type_kinds_to_types(scoped_types.into_iter().map(|t| t.kind).collect()),
+            types: type_kinds_to_types(
+                &scoped_types.into_iter().map(|t| t.kind).collect::<Vec<_>>(),
+            ),
             main_label: None,
             is_main: false,
         }
@@ -47,7 +49,7 @@ impl IRGenerator {
         self.variables.push(Variable {
             ty,
             name: format!("{name}#{id}"),
-        })
+        });
     }
 
     fn lookup_var(&self, name: &str, id: usize) -> Option<&Variable> {
@@ -56,7 +58,7 @@ impl IRGenerator {
             .find(|v| v.name == format!("{name}#{id}"))
     }
 
-    fn get_id(&mut self) -> usize {
+    const fn get_id(&mut self) -> usize {
         let id = self.temp_val_id;
         self.temp_val_id += 1;
         id
@@ -86,6 +88,7 @@ impl IRGenerator {
         self.blocks
     }
 
+    #[allow(clippy::too_many_lines)]
     fn expression_ir(&mut self, expr: &CheckedExpression) -> Entity {
         match &expr.data {
             CheckedExpressionData::BoolLiteral(val) => Entity::bool(*val),
@@ -219,7 +222,7 @@ impl IRGenerator {
                 }
 
                 let id = self.get_id();
-                let label = format!("FUN#{}", id);
+                let label = format!("FUN#{id}");
                 let prev_block = self.current_block;
                 self.current_block = self.add_block(
                     &label,
@@ -237,8 +240,9 @@ impl IRGenerator {
 
                 if self.is_main {
                     match &entity.ty {
-                        Type::Unit => self.add_instruction(Instruction::Exit(entity.clone())),
-                        Type::Int => self.add_instruction(Instruction::Exit(entity.clone())),
+                        Type::Unit | Type::Int => {
+                            self.add_instruction(Instruction::Exit(entity.clone()));
+                        }
                         _ => panic!("main must return Unit or Int"),
                     }
                 } else {
@@ -283,10 +287,10 @@ impl IRGenerator {
     }
 }
 
-fn type_kinds_to_types(type_kinds: Vec<TypeKind>) -> Vec<Type> {
+fn type_kinds_to_types(type_kinds: &[TypeKind]) -> Vec<Type> {
     let mut types = vec![];
 
-    for kind in &type_kinds {
+    for kind in type_kinds {
         match kind {
             TypeKind::Name(s) if s == "Unit" => types.push(Type::Unit),
             TypeKind::Name(s) if s == "Bool" => types.push(Type::Bool),
@@ -296,9 +300,9 @@ fn type_kinds_to_types(type_kinds: Vec<TypeKind>) -> Vec<Type> {
                 let Some(type_kind) = type_kinds.get(*return_type) else {
                     unreachable!("pretty sure this should never happen...")
                 };
-                types.append(&mut type_kinds_to_types(vec![type_kind.clone()]))
+                types.append(&mut type_kinds_to_types(std::slice::from_ref(type_kind)));
             }
-        };
+        }
     }
 
     types

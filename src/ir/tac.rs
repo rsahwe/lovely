@@ -20,7 +20,7 @@ impl Display for BasicBlock {
             "{}{}:",
             self.label,
             if self.parameters.is_empty() {
-                "".to_string()
+                String::new()
             } else {
                 format!(
                     "({})",
@@ -33,7 +33,7 @@ impl Display for BasicBlock {
             }
         )?;
         for instruction in &self.instructions {
-            writeln!(f, "  {}", instruction)?;
+            writeln!(f, "  {instruction}")?;
         }
         Ok(())
     }
@@ -86,25 +86,25 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn assign(dest: Entity, src: Entity) -> Self {
+    pub const fn assign(dest: Entity, src: Entity) -> Self {
         Self::Assign { dest, src }
     }
-    pub fn add(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
+    pub const fn add(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
         Self::Add { dest, lhs, rhs }
     }
-    pub fn sub(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
+    pub const fn sub(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
         Self::Sub { dest, lhs, rhs }
     }
-    pub fn mul(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
+    pub const fn mul(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
         Self::Mul { dest, lhs, rhs }
     }
-    pub fn div(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
+    pub const fn div(dest: Entity, lhs: Entity, rhs: Entity) -> Self {
         Self::Div { dest, lhs, rhs }
     }
-    pub fn not(dest: Entity, src: Entity) -> Self {
+    pub const fn not(dest: Entity, src: Entity) -> Self {
         Self::Not { dest, src }
     }
-    pub fn call(dest: Entity, callee: Entity, args: Vec<Entity>) -> Self {
+    pub const fn call(dest: Entity, callee: Entity, args: Vec<Entity>) -> Self {
         Self::Call { dest, callee, args }
     }
 }
@@ -112,13 +112,13 @@ impl Instruction {
 impl Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Instruction::Add { dest, lhs, rhs } => write!(f, "{dest} := {lhs} + {rhs}"),
-            Instruction::Sub { dest, lhs, rhs } => write!(f, "{dest} := {lhs} - {rhs}"),
-            Instruction::Mul { dest, lhs, rhs } => write!(f, "{dest} := {lhs} * {rhs}"),
-            Instruction::Div { dest, lhs, rhs } => write!(f, "{dest} := {lhs} / {rhs}"),
-            Instruction::Not { dest, src } => write!(f, "{dest} := !{src}"),
-            Instruction::Assign { dest, src } => write!(f, "{dest} := {src}"),
-            Instruction::Conditional {
+            Self::Add { dest, lhs, rhs } => write!(f, "{dest} := {lhs} + {rhs}"),
+            Self::Sub { dest, lhs, rhs } => write!(f, "{dest} := {lhs} - {rhs}"),
+            Self::Mul { dest, lhs, rhs } => write!(f, "{dest} := {lhs} * {rhs}"),
+            Self::Div { dest, lhs, rhs } => write!(f, "{dest} := {lhs} / {rhs}"),
+            Self::Not { dest, src } => write!(f, "{dest} := !{src}"),
+            Self::Assign { dest, src } => write!(f, "{dest} := {src}"),
+            Self::Conditional {
                 lhs,
                 rhs,
                 operator,
@@ -128,17 +128,17 @@ impl Display for Instruction {
                 f,
                 "if {lhs} {operator} {rhs} then goto {true_label} else goto {false_label}"
             ),
-            Instruction::Call { dest, callee, args } => write!(
+            Self::Call { dest, callee, args } => write!(
                 f,
                 "{dest} := {callee}({})",
                 args.iter()
-                    .map(|p| p.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
-            Instruction::Goto(label) => write!(f, "goto {}", label),
-            Instruction::Ret(entity) => write!(f, "ret {entity}"),
-            Instruction::Exit(code) => write!(f, "exit {code}"),
+            Self::Goto(label) => write!(f, "goto {label}"),
+            Self::Ret(entity) => write!(f, "ret {entity}"),
+            Self::Exit(code) => write!(f, "exit {code}"),
         }
     }
 }
@@ -152,7 +152,7 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn new(value: Value, ty: Type) -> Self {
+    pub const fn new(value: Value, ty: Type) -> Self {
         Self { value, ty }
     }
     pub fn variable(name: &str, ty: Type) -> Self {
@@ -161,25 +161,25 @@ impl Entity {
             ty,
         }
     }
-    pub fn temp_val(id: usize, ty: Type) -> Self {
+    pub const fn temp_val(id: usize, ty: Type) -> Self {
         Self {
             value: Value::Temp(id),
             ty,
         }
     }
-    pub fn int_literal(num: isize) -> Self {
+    pub const fn int_literal(num: isize) -> Self {
         Self {
             value: Value::Int(num),
             ty: Type::Int,
         }
     }
-    pub fn unit() -> Self {
+    pub const fn unit() -> Self {
         Self {
             value: Value::Unit,
             ty: Type::Unit,
         }
     }
-    pub fn bool(val: bool) -> Self {
+    pub const fn bool(val: bool) -> Self {
         Self {
             value: Value::Bool(val),
             ty: Type::Bool,
@@ -219,21 +219,20 @@ pub enum Type {
 impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Type::Int => write!(f, "Int"),
-            Type::Bool => write!(f, "Bool"),
-            Type::Unit => write!(f, "Unit"),
-            Type::Function { .. } => write!(f, "TODO(function types)"),
+            Self::Int => write!(f, "Int"),
+            Self::Bool => write!(f, "Bool"),
+            Self::Unit => write!(f, "Unit"),
+            Self::Function { .. } => write!(f, "TODO(function types)"),
         }
     }
 }
 
 impl Type {
-    pub fn size_in_bytes(&self) -> usize {
+    pub const fn size_in_bytes(&self) -> usize {
         match &self {
-            Type::Int => 8,
-            Type::Bool => 1,
-            Type::Unit => 0,
-            Type::Function { .. } => 8,
+            Self::Bool => 1,
+            Self::Unit => 0,
+            Self::Int | Self::Function { .. } => 8,
         }
     }
 }
@@ -260,12 +259,12 @@ pub enum Operator {
 impl Display for Operator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Operator::Less => write!(f, "<"),
-            Operator::Greater => write!(f, ">"),
-            Operator::LessEqual => write!(f, "<="),
-            Operator::GreaterEqual => write!(f, ">="),
-            Operator::Equal => write!(f, "=="),
-            Operator::NotEqual => write!(f, "!="),
+            Self::Less => write!(f, "<"),
+            Self::Greater => write!(f, ">"),
+            Self::LessEqual => write!(f, "<="),
+            Self::GreaterEqual => write!(f, ">="),
+            Self::Equal => write!(f, "=="),
+            Self::NotEqual => write!(f, "!="),
         }
     }
 }

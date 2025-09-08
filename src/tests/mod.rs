@@ -29,7 +29,7 @@ fn compiler_tests() {
         let ir = ir_generator.program_ir(&checked_program);
         let ir_string = ir
             .iter()
-            .map(|b| b.to_string())
+            .map(std::string::ToString::to_string)
             .collect::<Vec<_>>()
             .join("\n");
         insta::assert_snapshot!(ir_string);

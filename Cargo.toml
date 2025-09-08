@@ -2,6 +2,11 @@
 name = "lovely"
 version = "0.1.0"
 edition = "2024"
+description = "A lovely systems programming language"
+keywords = ["compiler", "language", "systems programming"]
+repository = "https://github.com/kiahjh/lovely"
+categories = ["compilers"]
+license = "none"
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"] }
