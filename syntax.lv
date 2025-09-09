@@ -1,70 +1,70 @@
-# comments start with `#`
+-- comments start with `--`
 
-# variable declarations:
+-- variable declarations:
 
-x :: 4 # immutable
-y := 8 # mutable
+x :: 4 -- immutable
+y := 8 -- mutable
 
-# you can also specify the type
+-- you can also specify the type
 my_unit : Unit : unit
 my_bool : Bool = false
 
-# definition and initialization can also be separate:
+-- definition and initialization can also be separate:
 my_var : Int
 my_var = 7
 
-# block expressions are just like block expressions in rust!
-# the entire expression gets the value of the last expression statement
+-- block expressions are just like block expressions in rust!
+-- the entire expression gets the value of the last expression statement
 foo :: {
   x :: 4
   y :: 8
   x + y
 }
-# ^ foo <- 12
+-- ^ foo <- 12
 
-# functions are just expressions and are assigned to variables as such
-# format looks like fun (<params>) -> <return_type>: <expr>
+-- functions are just expressions and are assigned to variables as such
+-- format looks like fun (<params>) -> <return_type>: <expr>
 add :: fun (~first: Int, to second: Int) -> Int: first + second
 
-# <expr> can be a block expression, in which case it looks like a function
-# from other languages: fun (<params>) -> <return_type>: { <body> }
+-- <expr> can be a block expression, in which case it looks like a function
+-- from other languages: fun (<params>) -> <return_type>: { <body> }
 add_with_block :: fun (~first: Int, to second: Int) -> Int: {
   first + second
 }
 
-# parameters use this syntax: <callsite_name> <implementation_name>: <type>
-# inside the function body, you use <implementation_name>, but at the callsite
-# you use <callsite_name> as the label.
-# if you want to use the same name in both places, just leave off <callsite_name>.
-# if you don't want to label the argument at the callsite, use `~`:
-# ~<implementation_name>: <type>
+-- parameters use this syntax: <callsite_name> <implementation_name>: <type>
+-- inside the function body, you use <implementation_name>, but at the callsite
+-- you use <callsite_name> as the label.
+-- if you want to use the same name in both places, just leave off <callsite_name>.
+-- if you don't want to label the argument at the callsite, use `~`:
+-- ~<implementation_name>: <type>
 
 add(3, to: 7)
 add_with_block(3, to: 7)
 
-# if expressions look like if <condition>: <expr>
-# they return the type of <expr> if followed by an else
-# otherwise if there's no else, they become Option(typeof expr)
+-- if expressions look like if <condition>: <expr>
+-- they return the type of <expr> if followed by an else
+-- otherwise if there's no else, they become Option(typeof expr)
 
-x :: if y > 0: "hi" else: "bye" # x is of type String
-x :: if y > 0: "hi" # x is of type Option(String)
+x :: if y > 0: "hi" else: "bye" -- x is of type String
+x :: if y > 0: "hi" -- x is of type Option(String)
 
-# while loops look just like if statements: while <condition>: expr
+-- while loops look just like if statements: while <condition>: expr
 while 5 > 3: do_something()
 
-# for loops look like for <item> in <iterator>: <expr>
+-- for loops look like for <item> in <iterator>: <expr>
 for num in 0..5: print(item)
 
-# loop loops just look like loop: <epxr>
+-- loop loops just look like loop: <epxr>
 loop: print("hi")
 
-# only loop loops can break with a value: `break <expr>`, but all loops
-# have break expressions that just return unit by default
+-- only loop loops can break with a value: `break <expr>`, but all loops
+-- have break expressions that just return unit by default
 
-# in Lovely, every user-defined type is either an enum or a tuple, but enums
-# can have fields, which can give them struct-like behavior. this means that
-# there's no clear distinction in Lovely between product and sum types,
-# and types can have properties of both
+-- in Lovely, every user-defined type is either an enum or a tuple, but enums
+-- can have fields, which can give them struct-like behavior. this means that
+-- there's no clear distinction in Lovely between product and sum types,
+-- and types can have properties of both
 
 type Worker {
   @Developer
@@ -75,7 +75,7 @@ type Worker {
   age: Int
 }
 
-# constructing a worker:
+-- constructing a worker:
 me :: Worker@Developer {
   name = "Kiah",
   age = 20,
@@ -85,10 +85,10 @@ my_brother :: Worker@Other("home builder") {
   age = 23,
 }
 
-# types can also have constant values including functions (methods)
+-- types can also have constant values including functions (methods)
 
 type Penguin {
-  $Emperor # <- `$` means Emperor is the default variant
+  $Emperor -- <- `$` means Emperor is the default variant
   @LittleBlue
   @King
   @Chinstrap
@@ -100,13 +100,13 @@ type Penguin {
 
 
 lil_blue :: Penguin@LittleBlue
-lil_blue.swim() # -> "sploosh"
-lil_blue.is_friendly # -> true
+lil_blue.swim() -- -> "sploosh"
+lil_blue.is_friendly -- -> true
 
-emperor :: Penguin$ {} # makes an Emperor penguin, since Emperor was marked with `$`
+emperor :: Penguin$ {} -- makes an Emperor penguin, since Emperor was marked with `$`
 
-# if you don't specify any variants for your type, you get one for free
-# called `$Default`, which, because it uses `$`, is the default variant:
+-- if you don't specify any variants for your type, you get one for free
+-- called `$Default`, which, because it uses `$`, is the default variant:
 
 type Creature {
   can_bite: Bool
@@ -118,11 +118,11 @@ scary_creature :: Creature$ {
   weight_in_kg = 200,
 }
 
-# btw, all anonymous type instantiations (when there's only one variant) are prefixed with `$` as well, so you can have something like:
-x :: ${ foo = 4, bar = 8 } # infered as { foo: Int bar: Int }
-y :: $(34, 4) # infered as (Int, Int)
+-- btw, all anonymous type instantiations (when there's only one variant) are prefixed with `$` as well, so you can have something like:
+x :: ${ foo = 4, bar = 8 } -- infered as { foo: Int bar: Int }
+y :: $(34, 4) -- infered as (Int, Int)
 
-# fields can have default values as well:
+-- fields can have default values as well:
 type Person {
   name: String
   age: Int
@@ -139,7 +139,7 @@ blackbeard :: Person$ {
   num_eyes = 1,
 }
 
-# you can nest types:
+-- you can nest types:
 type Foo {
   bar: Bar
 
@@ -149,14 +149,14 @@ type Foo {
 }
 bar :: Foo.Bar { baz = 8 }
 
-# generics don't need to be declared like in many languages
-# they start with a ' and are lowercase
+-- generics don't need to be declared like in many languages
+-- they start with a ' and are lowercase
 identity :: fun (~x: 'a) -> 'a: x
 
-identity(4) # -> 4
+identity(4) -- -> 4
 
-# protocols are like protocols in Swift, or traits in Rust
-# to demonstrate them, we'll use this functional list example
+-- protocols are like protocols in Swift, or traits in Rust
+-- to demonstrate them, we'll use this functional list example
 type List('a) {
   @Empty
   @Cons({
@@ -185,68 +185,68 @@ impl Iterator(List('a)) {
   }
 }
 
-# optionals
+-- optionals
 weird_fn :: fun (~x: Int) -> Option(Int): {
   if x > 8: Some(x * x) else: None
-  # because of how if expressions work, the above line is equivalent to this:
-  # if x > 8: x * x
+  -- because of how if expressions work, the above line is equivalent to this:
+  -- if x > 8: x * x
 }
 
-# errors
+-- errors
 might_error :: fun (~x: Int) -> Result(Int, String): {
   if x > 8: Ok(x * x) else: Err("whoops too small")
 }
 
-# modules
-# just like in rust, but with `.` instead of `::`
-use Syntax.{
-  List.{Foo, Bar},
-  might_error,
-}
+-- modules
+use std/math#(add, subtract)
+use std/io
 
-# ownership
-# Lovely is memory safe!
-# To pull this off, it uses a Rust/Mojo-inspired ownership model.
-# Every value is owned by exactly one variable at a time, but can be
-# accessed and even mutated by passing it along by reference, as long
-# as the reference doesn't outlive the variable that owns the value.
-# Variables are destroyed by Lovely when they go out of scope.
+-- submodules of io could then be used like:
+io#print("hello world")
 
-# function parameters are prefixed with one of the following three options:
-# - read: (the default value, if you leave off the prefix, this is used)
-#         an immutable reference to a value (& in Rust)
-# - mut: a mutable reference to a value (&mut in Rust)
-# - owned: an owned value (the default in Rust)
+-- ownership
+-- Lovely is memory safe!
+-- To pull this off, it uses a Rust/Mojo-inspired ownership model.
+-- Every value is owned by exactly one variable at a time, but can be
+-- accessed and even mutated by passing it along by reference, as long
+-- as the reference doesn't outlive the variable that owns the value.
+-- Variables are destroyed by Lovely when they go out of scope.
+
+-- function parameters are prefixed with one of the following three options:
+-- - read: (the default value, if you leave off the prefix, this is used)
+--         an immutable reference to a value (& in Rust)
+-- - mut: a mutable reference to a value (&mut in Rust)
+-- - owned: an owned value (the default in Rust)
 
 example_function :: fun (read ~x: String, mut ~y: Int, take ~z: Bool): unit
 
 x :: "foo"
-y := 89 # y has to be mutable, or it can't be passed as a mutable reference
+y := 89 -- y has to be mutable, or it can't be passed as a mutable reference
 z :: true
 example_function(x, y, give z)
-# z can't be used here because it was consumed by the function
+-- z can't be used here because it was consumed by the function
 
-# for owned arguments, just like in Mojo, there are three cases:
-# - you pass in a variable prefixed with `give`, which ends the lifetime of that variable moves it into the scope of the function
-# - you don't use `give`, which will copy the variable over if it implements the `Copiable` protocol, otherwise it will be a compiler error
-# - passing a newly-created value, like a literal or the result of a function call
+-- for owned arguments, just like in Mojo, there are three cases:
+-- - you pass in a variable prefixed with `give`, which ends the lifetime of that variable moves it into the scope of the function
+-- - you don't use `give`, which will copy the variable over if it implements the `Copiable` protocol, otherwise it will be a compiler error
+-- - passing a newly-created value, like a literal or the result of a function call
 
-# variables are allocated and deallocated by the compilier
+-- variables are allocated and deallocated by the compilier
 
-# unsafe blocks
-# just block expressions prepended with the `unsafe` keywords that allow unsafe operations
+-- unsafe blocks
+-- just block expressions prepended with the `unsafe` keywords that allow unsafe operations
 unsafe {
-  2 + 2 # just an example, this obviously isn't unsafe
+  2 + 2 -- just an example, this obviously isn't unsafe
 }
 
-# raw pointers
+-- raw pointers
 
 x := 8
 xp : *Int : x.&
-consumes(give x) # x dies, so xp is pointing to garbage
+consumes(give x) -- x dies, so xp is pointing to garbage
 
-# unsafe blocks are required for pointer dereferencing, but not for pointer creation
+-- unsafe blocks are required for pointer dereferencing, but not for pointer creation
 unsafe {
   print(xp.*)
-  xp.* = 30 # pointer derefs are valid lvalues
+  xp.* = 30 -- pointer derefs are valid lvalues
 }

@@ -18,7 +18,10 @@ impl Expression {
 pub enum ExpressionKind {
     BoolLiteral(bool),
     IntLiteral(isize),
-    Ident(String),
+    Ident {
+        name: String,
+        namespace: Option<String>,
+    },
     Block(Vec<Expression>),
     Prefix {
         operator: PrefixOperator,
@@ -42,6 +45,7 @@ pub enum ExpressionKind {
     },
     FunctionCall {
         name: String,
+        namespace: Option<String>,
         arguments: Vec<FunctionArgument>,
     },
     Use {
@@ -70,7 +74,7 @@ impl ExpressionKind {
             Infix { left, right, .. } => left.kind.is_const() && right.kind.is_const(),
             VariableDecl { value, mutable, .. } => !mutable && value.kind.is_const(),
             FunctionCall { .. } => false,
-            BoolLiteral(_) | IntLiteral(_) | Ident(_) | Function { .. } | Use { .. } => true,
+            BoolLiteral(_) | IntLiteral(_) | Ident { .. } | Function { .. } | Use { .. } => true,
         }
     }
 }

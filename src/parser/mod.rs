@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::parser::ast::UseTailItem;
 #[allow(clippy::enum_glob_use)]
 use crate::{
     lexer::{
@@ -106,6 +107,13 @@ impl<'src> Parser<'src> {
                         &Precedence::Product,
                     )?;
                 }
+                Slash => {
+                    expr = self.parse_infix_expression(
+                        expr,
+                        InfixOperator::Divide,
+                        &Precedence::Product,
+                    )?;
+                }
                 GreaterThan => {
                     expr = self.parse_infix_expression(
                         expr,
@@ -172,11 +180,23 @@ impl<'src> Parser<'src> {
                     Colon => Ok(Box::new(move |parser| {
                         parser.parse_variable_declaration(&name, span.start)
                     })),
+                    Hash => {
+                        self.expect_token(&Hash)?;
+                        let (sub_name, _) = self.expect_ident()?;
+                        match self.peek_kind() {
+                            LParen => Ok(Box::new(move |parser| {
+                                parser.parse_function_call(&sub_name, Some(&name), span.start)
+                            })),
+                            _ => Ok(Box::new(move |_| {
+                                Ok(Parser::parse_variable_ident(&sub_name, Some(&name), span))
+                            })),
+                        }
+                    }
                     LParen => Ok(Box::new(move |parser| {
-                        parser.parse_function_call(&name, span.start)
+                        parser.parse_function_call(&name, None, span.start)
                     })),
                     _ => Ok(Box::new(move |_| {
-                        Ok(Parser::parse_variable_ident(&name, span))
+                        Ok(Parser::parse_variable_ident(&name, None, span))
                     })),
                 }
             }
@@ -184,6 +204,7 @@ impl<'src> Parser<'src> {
             ExclamationMark => Ok(Box::new(|parser| {
                 parser.parse_prefix_expression(PrefixOperator::LogicalNot)
             })),
+            Use => Ok(Box::new(|parser| parser.parse_use_expression())),
             _ => Err(Error::NoPrefixParseFn(peek_token_kind.clone())),
         }
     }
@@ -242,8 +263,14 @@ impl<'src> Parser<'src> {
         }
     }
 
-    fn parse_variable_ident(name: &str, span: Span) -> Expression {
-        Expression::new(ExpressionKind::Ident(name.to_string()), span)
+    fn parse_variable_ident(name: &str, namespace: Option<&str>, span: Span) -> Expression {
+        Expression::new(
+            ExpressionKind::Ident {
+                name: name.to_string(),
+                namespace: namespace.map(std::string::ToString::to_string),
+            },
+            span,
+        )
     }
 
     fn parse_type(&mut self) -> Result<Type, Error> {
@@ -267,6 +294,7 @@ impl<'src> Parser<'src> {
     fn parse_function_call(
         &mut self,
         fn_name: &str,
+        namespace: Option<&str>,
         start_position: usize,
     ) -> Result<Expression, Error> {
         self.expect_token(&LParen)?;
@@ -287,6 +315,7 @@ impl<'src> Parser<'src> {
         Ok(Expression::new(
             ExpressionKind::FunctionCall {
                 name: fn_name.to_string(),
+                namespace: namespace.map(std::string::ToString::to_string),
                 arguments,
             },
             Span::from_range(start_position, end_span.end),
@@ -305,8 +334,24 @@ impl<'src> Parser<'src> {
                 self.expect_token(&Colon)?;
                 label = Some(name);
                 value = self.parse_expression(&Precedence::Lowest)?;
+            } else if self.peek_kind() == &Hash {
+                self.expect_token(&Hash)?;
+                let (sub_name, _) = self.expect_ident()?;
+                value = Expression::new(
+                    ExpressionKind::Ident {
+                        name: sub_name,
+                        namespace: Some(name),
+                    },
+                    span,
+                );
             } else {
-                value = Expression::new(ExpressionKind::Ident(name), span);
+                value = Expression::new(
+                    ExpressionKind::Ident {
+                        name,
+                        namespace: None,
+                    },
+                    span,
+                );
             }
         } else {
             value = self.parse_expression(&Precedence::Lowest)?;
@@ -356,6 +401,55 @@ impl<'src> Parser<'src> {
             },
             Span::from_range(start_position, end_position),
         ))
+    }
+
+    fn parse_use_expression(&mut self) -> Result<Expression, Error> {
+        let start_span = self.expect_token(&Use)?;
+        let mut end_span;
+
+        let mut segments = vec![];
+        let mut tail = vec![];
+
+        let (name, span) = self.expect_ident()?;
+        segments.push(name);
+        end_span = span;
+
+        while self.peek_kind() == &Slash {
+            self.expect_token(&Slash)?;
+            let (name, span) = self.expect_ident()?;
+            segments.push(name);
+            end_span = span;
+        }
+
+        if self.peek_kind() == &Hash {
+            self.expect_token(&Hash)?;
+            self.expect_token(&LParen)?;
+            tail.push(self.parse_use_expression_tail_item()?);
+            while self.peek_kind() == &Comma {
+                self.expect_token(&Comma)?;
+                tail.push(self.parse_use_expression_tail_item()?);
+            }
+            let span = self.expect_token(&RParen)?;
+            end_span = span;
+        }
+
+        Ok(Expression::new(
+            ExpressionKind::Use { segments, tail },
+            Span::from_range(start_span.start, end_span.end),
+        ))
+    }
+
+    fn parse_use_expression_tail_item(&mut self) -> Result<UseTailItem, Error> {
+        let (name, _) = self.expect_ident()?;
+        let alias = if self.peek_kind() == &As {
+            self.expect_token(&As)?;
+            let (alias_name, _) = self.expect_ident()?;
+            Some(alias_name)
+        } else {
+            None
+        };
+
+        Ok(UseTailItem { name, alias })
     }
 
     fn parse_function_expression(&mut self) -> Result<Expression, Error> {
@@ -497,7 +591,7 @@ impl<'src> Parser<'src> {
             DoubleEqual | NotEqual => Precedence::Equality,
             LessThan | GreaterThan | LessThanOrEqual | GreaterThanOrEqual => Precedence::Comparison,
             Plus | Minus => Precedence::Sum,
-            Asterisk => Precedence::Product,
+            Asterisk | Slash => Precedence::Product,
             LParen => Precedence::Group,
             _ => Precedence::Lowest,
         }

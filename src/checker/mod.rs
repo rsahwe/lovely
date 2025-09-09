@@ -304,7 +304,7 @@ impl Checker {
                     type_hint,
                 )
             }
-            ExpressionKind::Ident(name) => {
+            ExpressionKind::Ident { name, .. } => {
                 if let Some((var_id, var_type)) = self.lookup_variable(name, self.cur_scope) {
                     Self::typed_expression(
                         CheckedExpressionData::Ident {
@@ -395,7 +395,9 @@ impl Checker {
                     type_hint,
                 )
             }
-            ExpressionKind::FunctionCall { name, arguments } => {
+            ExpressionKind::FunctionCall {
+                name, arguments, ..
+            } => {
                 let mut args = vec![];
 
                 for arg in arguments {

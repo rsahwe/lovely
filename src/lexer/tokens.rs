@@ -5,6 +5,8 @@ use std::fmt::Display;
 pub enum TokenKind {
     // keywords:
     Fun,    // fun
+    Use,    // use
+    As,     // as
     Take,   // take
     Mut,    // mut
     Read,   // read
@@ -18,18 +20,18 @@ pub enum TokenKind {
     False,  // false
 
     // syntax
-    LParen,          // (
-    RParen,          // )
-    LBrace,          // {
-    RBrace,          // }
-    Colon,           // :
-    Comma,           // ,
-    Tilde,           // ~
-    SingleEqual,     // =
-    RArrow,          // ->
-    Slash,           // /
-    Dot,             // .
-    NamespaceAccess, // #
+    LParen,      // (
+    RParen,      // )
+    LBrace,      // {
+    RBrace,      // }
+    Colon,       // :
+    Comma,       // ,
+    Tilde,       // ~
+    SingleEqual, // =
+    RArrow,      // ->
+    Slash,       // /
+    Dot,         // .
+    Hash,        // #
 
     // operators:
     ExclamationMark,    // !
@@ -58,6 +60,8 @@ impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
             Self::Fun => "fun",
+            Self::Use => "use",
+            Self::As => "as",
             Self::Take => "take",
             Self::Mut => "mut",
             Self::Read => "read",
@@ -80,7 +84,7 @@ impl Display for TokenKind {
             Self::SingleEqual => "=",
             Self::Slash => "/",
             Self::Dot => ".",
-            Self::NamespaceAccess => "#",
+            Self::Hash => "#",
             Self::ExclamationMark => "!",
             Self::Plus => "+",
             Self::Minus => "-",

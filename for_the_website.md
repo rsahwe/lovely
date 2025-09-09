@@ -1,2 +1,0 @@
-- "dinner ray" -> DinArray
-- "try Seq! It's Vec but better!"

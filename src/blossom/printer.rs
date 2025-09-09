@@ -7,3 +7,7 @@ pub fn error(text: &str) {
 pub fn success(text: &str) {
     println!("{}", text.green());
 }
+
+pub fn info(text: &str) {
+    println!("{text}");
+}

@@ -35,7 +35,6 @@ impl<'src> Lexer<'src> {
         match cur_char {
             '/' => self.make_single_char_token(cur_index, Slash),
             '.' => self.make_single_char_token(cur_index, Dot),
-            ' ' => self.make_single_char_token(cur_index, NamespaceAccess),
             '+' => self.make_single_char_token(cur_index, Plus),
             '-' => {
                 self.next();
@@ -61,6 +60,7 @@ impl<'src> Lexer<'src> {
                     Token::new(Minus, cur_index, 1)
                 }
             }
+            '#' => self.make_single_char_token(cur_index, Hash),
             '*' => self.make_single_char_token(cur_index, Asterisk),
             '&' => self.make_single_char_token(cur_index, BitAnd),
             '|' => self.make_single_char_token(cur_index, BitOr),
@@ -124,6 +124,7 @@ impl<'src> Lexer<'src> {
                 let ident = self.read_ident(cur_index);
                 match ident {
                     "fun" => Token::new(Fun, cur_index, 3),
+                    "use" => Token::new(Use, cur_index, 3),
                     "take" => Token::new(Take, cur_index, 4),
                     "mut" => Token::new(Mut, cur_index, 3),
                     "read" => Token::new(Read, cur_index, 4),
