@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
-use blossom::Blossom;
+use blush::Blush;
 use clap::{Parser, Subcommand};
 
-mod blossom;
+mod blush;
 mod checker;
 mod codegen;
 mod ir;
@@ -42,13 +42,13 @@ fn main() {
     match cli.command {
         Commands::Build { path } => {
             println!();
-            let res = Blossom::build(path);
+            let res = Blush::build(path);
             match res {
                 Ok(()) => {
-                    blossom::printer::success("Build complete!");
+                    blush::printer::success("Build complete!");
                 }
                 Err(err) => {
-                    blossom::printer::error(&format!("Error: {err}"));
+                    blush::printer::error(&format!("Error: {err}"));
                 }
             }
             println!("\n");

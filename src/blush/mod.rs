@@ -9,9 +9,9 @@ use std::{
 
 pub mod printer;
 
-pub struct Blossom {}
+pub struct Blush {}
 
-impl Blossom {
+impl Blush {
     pub fn build(path: String) -> Result<(), Box<dyn Error>> {
         let path_buf = PathBuf::from(path);
         let file_tree = collect_files(&path_buf)?;
