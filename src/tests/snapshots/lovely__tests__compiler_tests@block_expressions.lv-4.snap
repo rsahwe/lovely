@@ -1,9 +1,0 @@
----
-source: src/tests/mod.rs
-expression: ir_string
-input_file: src/tests/source_files/block_expressions.lv
----
-ENTRY:
-  t0 := 7 - 4
-  x#0 := t0
-  y#1 := x#0

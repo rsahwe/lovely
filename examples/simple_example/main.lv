@@ -1,0 +1,5 @@
+use math#(two)
+
+main :: fun () -> Int: {
+   2 + two
+}

@@ -1,6 +1,6 @@
 use crate::span::Span;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Program(pub Vec<Expression>);
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -53,15 +53,6 @@ pub enum ExpressionKind {
         tail: Vec<UseTailItem>,
     },
 }
-
-// this is what I'm going with:
-//
-// use foo/bar/baz#(apple_function as apple, OrangeType, global_constant as globby)
-// use foo/bar/baz
-//
-// baz#apple_function()
-//
-// -- for comments, # for namespace
 
 impl ExpressionKind {
     pub fn is_const(&self) -> bool {

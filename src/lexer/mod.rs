@@ -143,7 +143,7 @@ impl<'src> Lexer<'src> {
                 let size = self.read_int(cur_index);
                 Token::new(IntLiteral, cur_index, size)
             }
-            c => panic!("illegal token: {c}"),
+            c => panic!("illegal token: {c}"), // Hmm
         }
     }
 

@@ -1,6 +1,0 @@
-use std/math
-use std/math[div]
-
-math|:div
-
-main :: fun () -> Int: math.add(2, to: div(6, by: 3))

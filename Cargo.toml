@@ -12,6 +12,7 @@ license = "none"
 clap = { version = "4.5.38", features = ["derive"] }
 colored = "3.0.0"
 pretty_assertions = "1.4.1"
+toml = "0.9.5"
 
 [dev-dependencies]
 insta = { version = "1.43.1", features = ["glob"] }
