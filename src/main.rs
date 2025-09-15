@@ -23,6 +23,9 @@ pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    #[arg(long)]
+    asm: bool,
 }
 
 #[derive(Subcommand)]
@@ -39,7 +42,7 @@ fn main() {
     match cli.command {
         Commands::Build { path } => {
             println!();
-            let res = Blush::build(path);
+            let res = Blush::build(&path, cli.asm);
             match res {
                 Ok(()) => {
                     blush::printer::success("Build complete!");
