@@ -22,7 +22,6 @@ impl Blush {
         let path_buf = PathBuf::from(path);
         let file_tree = collect_files(&path_buf)?;
 
-        printer::info("Reading config file...");
         let Some(config_file) = file_tree.find(&|name, _| {
             name.split('/')
                 .next_back()
@@ -46,7 +45,6 @@ impl Blush {
             })
             .expect("Expected a directory");
 
-        printer::info(&format!("Parsing {} files...", lovely_files.len()));
         let parsed_lovely_files =
             lovely_files.try_map(&|s| Parser::new(s).parse().map_err(std::convert::Into::into))?;
         let flattened_files: Vec<(String, &_)> = parsed_lovely_files

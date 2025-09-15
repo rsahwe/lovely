@@ -1,5 +1,4 @@
 use crate::{
-    blush::printer,
     parser::ast::{Expression, ExpressionKind, Program, UseTailItem},
     span::Span,
 };
@@ -19,7 +18,6 @@ impl<'a> Combiner<'a> {
     }
 
     pub fn combine(self) -> Result<Program, Box<dyn Error>> {
-        printer::info(&format!("Combining {} ASTs...", self.files.len()));
         let Some(main_file) = self
             .files
             .iter()

@@ -1,5 +1,6 @@
-use math#(two)
+use numbers#(two, three)
+use math#(add, increment)
 
 main :: fun () -> Int: {
-   2 + two
+   add(two, to: increment(three))
 }
