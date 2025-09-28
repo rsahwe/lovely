@@ -16,9 +16,9 @@ my_var = 7
 -- block expressions are just like block expressions in rust!
 -- the entire expression gets the value of the last expression statement
 foo :: {
-  x :: 4
-  y :: 8
-  x + y
+   x :: 4
+   y :: 8
+   x + y
 }
 -- ^ foo <- 12
 
@@ -29,7 +29,7 @@ add :: fun (~first: Int, to second: Int) -> Int: first + second
 -- <expr> can be a block expression, in which case it looks like a function
 -- from other languages: fun (<params>) -> <return_type>: { <body> }
 add_with_block :: fun (~first: Int, to second: Int) -> Int: {
-  first + second
+   first + second
 }
 
 -- parameters use this syntax: <callsite_name> <implementation_name>: <type>
@@ -61,93 +61,70 @@ loop: print("hi")
 -- only loop loops can break with a value: `break <expr>`, but all loops
 -- have break expressions that just return unit by default
 
--- in Lovely, every user-defined type is either an enum or a tuple, but enums
--- can have fields, which can give them struct-like behavior. this means that
--- there's no clear distinction in Lovely between product and sum types,
--- and types can have properties of both
+-- In Lovely, there's only sum types, made up of a union of variants.
+-- They can optionally have a `with` block, containing fields that are common
+-- to all variants.
 
-type Worker {
-  @Developer
-  @NoJob
-  @Other(String)
-
-  name: String
-  age: Int
+type Worker = Developer | NoJob | Other(String) with {
+   name: String
+   age: Int
 }
 
 -- constructing a worker:
-me :: Worker@Developer {
-  name = "Kiah",
-  age = 20,
+me :: Worker.Developer {
+   name = "Kiah",
+   age = 20,
 }
-my_brother :: Worker@Other("home builder") {
-  name = "Ezra",
-  age = 23,
+my_brother :: Worker.Other("home builder") {
+   name = "Ezra",
+   age = 23,
 }
 
 -- types can also have constant values including functions (methods)
 
-type Penguin {
-  $Emperor -- <- `$` means Emperor is the default variant
-  @LittleBlue
-  @King
-  @Chinstrap
-  @Adele
+-- prefixing an enum variant with `$` makes it the default variant
 
-  swim :: fun (self): print("sploosh")
-  is_friendly :: true
+type Penguin = $Emperor | LittleBlue | King | Chinstrap | Adele with {
+   swim :: fun (self): print("sploosh")
+   is_friendly :: true
 }
 
-
-lil_blue :: Penguin@LittleBlue
+lil_blue :: Penguin.LittleBlue
 lil_blue.swim() -- -> "sploosh"
 lil_blue.is_friendly -- -> true
 
-emperor :: Penguin$ {} -- makes an Emperor penguin, since Emperor was marked with `$`
+emperor :: Penguin$ -- creates a Penguin with the default variant (Emperor in this case)
 
 -- if you don't specify any variants for your type, you get one for free
 -- called `$Default`, which, because it uses `$`, is the default variant:
 
-type Creature {
-  can_bite: Bool
-  weight_in_kg: Int
+type Creature = {
+   can_bite: Bool
+   weight_in_kg: Int
 }
 
+-- equivalent to Creature.Default
 scary_creature :: Creature$ {
-  can_bite = true,
-  weight_in_kg = 200,
+   can_bite = true,
+   weight_in_kg = 200,
 }
-
--- btw, all anonymous type instantiations (when there's only one variant) are prefixed with `$` as well, so you can have something like:
-x :: ${ foo = 4, bar = 8 } -- infered as { foo: Int bar: Int }
-y :: $(34, 4) -- infered as (Int, Int)
 
 -- fields can have default values as well:
-type Person {
-  name: String
-  age: Int
-  num_eyes: Int = 2
+type Person = {
+   name: String
+   age: Int
+   num_eyes: Int = 2
 }
 
 me :: Person$ {
-  name = "Kiah",
-  age = 20,
+   name = "Kiah",
+   age = 20,
 }
 blackbeard :: Person$ {
-  name = "blackbeard",
-  age = 40,
-  num_eyes = 1,
+   name = "blackbeard",
+   age = 40,
+   num_eyes = 1,
 }
-
--- you can nest types:
-type Foo {
-  bar: Bar
-
-  type Bar {
-    baz: Int
-  }
-}
-bar :: Foo.Bar { baz = 8 }
 
 -- generics don't need to be declared like in many languages
 -- they start with a ' and are lowercase
@@ -157,44 +134,49 @@ identity(4) -- -> 4
 
 -- protocols are like protocols in Swift, or traits in Rust
 -- to demonstrate them, we'll use this functional list example
-type List('a) {
-  @Empty
-  @Cons({
-    head: 'a
-    tail: *List('a)
-  })
-}
+type List('a) = 
+   | Empty
+   | Cons({
+        head: 'a
+        tail: *List('a)
+     })
 
 proto Iterator('a) {
-  type Item
+   type Item
 
-  next: fun (mut 'a) -> Item
+   next: fun (mut 'a) -> Item
 }
 
 impl Iterator(List('a)) {
-  type Item 'a
+   type Item = 'a
 
-  next = fun (mut self) -> Option(Item): {
-    match self {
-      @Empty: None
-      @Cons(${ head, tail }): {
-        self = tail
-        head
+   next = fun (mut self) -> Option(Item): {
+      match self {
+         Empty: None
+         Cons({ head, tail }): {
+            self = tail
+            head
+         }
       }
-    }
-  }
+   }
 }
 
 -- optionals
+-- the definition for Option looks like this:
+type Option('a) = Some('a) | None
+
 weird_fn :: fun (~x: Int) -> Option(Int): {
-  if x > 8: Some(x * x) else: None
-  -- because of how if expressions work, the above line is equivalent to this:
-  -- if x > 8: x * x
+   if x > 8: Some(x * x) else: None
+   -- because of how if expressions work, the above line is equivalent to this:
+   -- if x > 8: x * x
 }
 
 -- errors
+-- the definition for Result looks like this:
+type Result('a, 'b) = Ok('a) | Err('b)
+
 might_error :: fun (~x: Int) -> Result(Int, String): {
-  if x > 8: Ok(x * x) else: Err("whoops too small")
+   if x > 8: Ok(x * x) else: Err("whoops too small")
 }
 
 -- modules
@@ -236,7 +218,7 @@ example_function(x, y, give z)
 -- unsafe blocks
 -- just block expressions prepended with the `unsafe` keywords that allow unsafe operations
 unsafe {
-  2 + 2 -- just an example, this obviously isn't unsafe
+   2 + 2 -- just an example, this obviously isn't unsafe
 }
 
 -- raw pointers
@@ -247,6 +229,6 @@ consumes(give x) -- x dies, so xp is pointing to garbage
 
 -- unsafe blocks are required for pointer dereferencing, but not for pointer creation
 unsafe {
-  print(xp.*)
-  xp.* = 30 -- pointer derefs are valid lvalues
+   print(xp.*)
+   xp.* = 30 -- pointer derefs are valid lvalues
 }
