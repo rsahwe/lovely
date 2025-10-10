@@ -12,6 +12,9 @@ mod parser;
 mod span;
 mod targets;
 
+#[cfg(test)]
+mod tests;
+
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]

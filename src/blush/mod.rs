@@ -22,6 +22,44 @@ pub struct Blush {}
 
 impl Blush {
     pub fn build(path: &str, just_asm: bool) -> Result<(), Box<dyn Error>> {
+        let (asm, package_name) = Self::get_asm_and_package_name(path)?;
+
+        if just_asm {
+            println!("\n{asm}\n");
+        } else {
+            // make build directory if it doesn't exist
+            let path = Path::new(path).join("build");
+            fs::create_dir_all(&path)?;
+
+            // generate asm file
+            let mut out_file = File::create(path.join("out.asm"))?;
+            out_file.write_all(asm.as_bytes())?;
+
+            // assemble asm into object file
+            Command::new("nasm")
+                .arg("-f")
+                .arg("elf64")
+                .arg("-o")
+                .arg(path.join("out.o"))
+                .arg(path.join("out.asm"))
+                .output()?;
+
+            // link object file into executable
+            Command::new("ld")
+                .arg("-o")
+                .arg(path.join(package_name))
+                .arg(path.join("out.o"))
+                .output()?;
+
+            // delete intermediate files
+            fs::remove_file(path.join("out.asm"))?;
+            fs::remove_file(path.join("out.o"))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn get_asm_and_package_name(path: &str) -> Result<(String, String), Box<dyn Error>> {
         let path_buf = PathBuf::from(path);
         let file_tree = collect_files(&path_buf)?;
 
@@ -70,41 +108,7 @@ impl Blush {
         };
 
         let ir = IRGenerator::new(checker.types).program_ir(&checked_program);
-        let asm = CodeGenerator::new().gen_asm(&ir);
-
-        if just_asm {
-            println!("\n{asm}\n");
-        } else {
-            // make build directory if it doesn't exist
-            let path = Path::new(path).join("build");
-            fs::create_dir_all(&path)?;
-
-            // generate asm file
-            let mut out_file = File::create(path.join("out.asm"))?;
-            out_file.write_all(asm.as_bytes())?;
-
-            // assemble asm into object file
-            Command::new("nasm")
-                .arg("-f")
-                .arg("elf64")
-                .arg("-o")
-                .arg(path.join("out.o"))
-                .arg(path.join("out.asm"))
-                .output()?;
-
-            // link object file into executable
-            Command::new("ld")
-                .arg("-o")
-                .arg(path.join(package_name))
-                .arg(path.join("out.o"))
-                .output()?;
-
-            // delete intermediate files
-            fs::remove_file(path.join("out.asm"))?;
-            fs::remove_file(path.join("out.o"))?;
-        }
-
-        Ok(())
+        Ok((CodeGenerator::new().gen_asm(&ir), package_name.to_string()))
     }
 }
 

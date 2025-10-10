@@ -15,7 +15,7 @@ pretty_assertions = "1.4.1"
 toml = "0.9.5"
 
 [dev-dependencies]
-insta = { version = "1.43.1", features = ["glob"] }
+insta = "1.43.1"
 
 [lints.clippy]
 pedantic = "warn"
