@@ -1,6 +1,6 @@
 ---
 source: src/tests/mod.rs
-description: src/tests/cases/01_arithmetic
+description: src/tests/cases/02_conditional
 expression: asm
 ---
 bits 64
@@ -8,7 +8,7 @@ global _start
 
 section .rodata
 
-  main#3: dq FUN#0
+  main#0: dq FUN#0
 
 
 section .text
@@ -21,37 +21,35 @@ _start:
 FUN#0:
   enter 0, 0
 
-  ; t1 := 8 / 4
-  mov rax, 8
-  cqo
-  idiv qword 4
+  ; t4 := !false
+  mov rax, 0
+  cmp rax, 0
+  sete al
+  movzx eax, al
   push qword rax
 
-  ; x#0 := t1
-  push qword [rbp - 8]
+  ; create t3 and if not t4 then goto label#1
+  sub rsp, 8
+  mov rax, [rbp - 8]
+  cmp rax, 0
+  je label#1
 
-  ; t2 := x#0 + 1
-  mov rax, [rbp - 16]
-  add rax, 1
-  push qword rax
+  ; t3 := 0
+  mov [rbp - 16], 0
 
-  ; y#1 := t2
-  push qword [rbp - 24]
+  ; goto label#2
+  jmp label#2
 
-  ; t3 := y#1 * 2
-  mov rax, [rbp - 32]
-  imul rax, 2
-  push qword rax
+  ; label label#1
+label#1:
 
-  ; t4 := t3 - 1
-  mov rax, [rbp - 40]
-  sub rax, 1
-  push qword rax
+  ; t3 := 1
+  mov [rbp - 16], 1
 
-  ; z#2 := t4
-  push qword [rbp - 48]
+  ; label label#2
+label#2:
 
-  ; exit z#2
+  ; exit t3
   mov rax, 60
-  mov rdi, [rbp - 56]
+  mov rdi, [rbp - 16]
   syscall

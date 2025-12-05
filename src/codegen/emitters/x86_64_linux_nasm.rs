@@ -1,5 +1,5 @@
 use super::Emitter;
-use crate::ir::tac::{BasicBlock, Entity, Instruction, TempId, Value};
+use crate::ir::tac::{BasicBlock, Entity, Instruction, TempId, Type, Value};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
 
@@ -11,7 +11,6 @@ pub struct CodeGenerator {
     current_stack_offset: HashMap<String, usize>,        // (function label -> stack offset)
     current_function: Option<String>,
 }
-
 impl CodeGenerator {
     pub fn new() -> Self {
         Self {
@@ -135,8 +134,20 @@ impl CodeGenerator {
                     unreachable!()
                 }
             }
-            Instruction::Not { .. } => {
-                self.text_section.push_str("  TODO: not\n");
+            Instruction::Not { dest, src } => {
+                if let Value::Temp(temp_id) = dest.value {
+                    self.allocate_temp_value(temp_id, dest);
+
+                    let src_asm = self.entity_to_asm(src);
+
+                    let _ = writeln!(self.text_section, "  mov rax, {src_asm}");
+                    let _ = writeln!(self.text_section, "  cmp rax, 0");
+                    let _ = writeln!(self.text_section, "  sete al");
+                    let _ = writeln!(self.text_section, "  movzx eax, al");
+                    let _ = writeln!(self.text_section, "  push qword rax");
+                } else {
+                    unreachable!()
+                }
             }
             Instruction::Assign { dest, src } => match (&dest.value, &src.ty) {
                 (Value::Variable(name), ty) => {
@@ -151,8 +162,23 @@ impl CodeGenerator {
                 }
                 _ => unreachable!(),
             },
-            Instruction::Conditional { .. } => {
-                self.text_section.push_str("  TODO: conditional\n");
+            Instruction::Conditional {
+                dest,
+                condition,
+                false_label,
+            } => {
+                if let Value::Temp(temp_id) = dest.value {
+                    self.allocate_temp_value(temp_id, dest);
+
+                    let condition_asm = self.entity_to_asm(condition);
+
+                    let _ = writeln!(self.text_section, "  sub rsp, {}", dest.ty.size_in_bytes());
+                    let _ = writeln!(self.text_section, "  mov rax, {condition_asm}");
+                    let _ = writeln!(self.text_section, "  cmp rax, 0");
+                    let _ = writeln!(self.text_section, "  je {false_label}");
+                } else {
+                    unreachable!()
+                }
             }
             Instruction::Call { dest, callee, args } => {
                 if let Value::Temp(temp_id) = dest.value {
@@ -176,16 +202,33 @@ impl CodeGenerator {
                 let _ = writeln!(self.text_section, "  jmp {label}");
             }
             Instruction::Ret(entity) => {
-                let entity_asm = self.entity_to_asm(entity);
+                let entity_asm = if matches!(entity.ty, Type::Unit) {
+                    "0".to_string()
+                } else {
+                    self.entity_to_asm(entity)
+                };
                 let _ = writeln!(self.text_section, "  mov rax, {entity_asm}");
                 let _ = writeln!(self.text_section, "  leave");
                 let _ = writeln!(self.text_section, "  ret");
             }
             Instruction::Exit(entity) => {
                 self.text_section.push_str("  mov rax, 60\n");
-                let entity_asm = self.entity_to_asm(entity);
+                let entity_asm = if matches!(entity.ty, Type::Unit) {
+                    "0".to_string()
+                } else {
+                    self.entity_to_asm(entity)
+                };
                 let _ = writeln!(self.text_section, "  mov rdi, {entity_asm}");
                 let _ = writeln!(self.text_section, "  syscall");
+            }
+            Instruction::Label(label) => {
+                let _ = writeln!(self.text_section, "{label}:");
+            }
+            Instruction::Move { dest, src } => {
+                let dest_asm = self.entity_to_asm(dest);
+                let src_asm = self.entity_to_asm(src);
+
+                let _ = writeln!(self.text_section, "  mov {dest_asm}, {src_asm}");
             }
         }
     }
@@ -224,7 +267,7 @@ impl CodeGenerator {
             }
             Value::Unit => todo!("unit"),
             Value::Int(num) => num.to_string(),
-            Value::Bool(_) => todo!("bool"),
+            Value::Bool(val) => if *val { "1" } else { "0" }.to_string(),
             Value::Variable(name) => {
                 if let Some(var_name) = self.global_vars.get(name) {
                     return format!("[{var_name}]");

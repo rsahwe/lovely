@@ -205,6 +205,7 @@ impl<'src> Parser<'src> {
                 parser.parse_prefix_expression(PrefixOperator::LogicalNot)
             })),
             Use => Ok(Box::new(|parser| parser.parse_use_expression())),
+            If => Ok(Box::new(|parser| parser.parse_conditional())),
             _ => Err(Error::NoPrefixParseFn(peek_token_kind.clone())),
         }
     }
@@ -548,6 +549,27 @@ impl<'src> Parser<'src> {
             }
             tok => Err(Error::expected("parameter name", &tok.to_string())),
         }
+    }
+
+    fn parse_conditional(&mut self) -> Result<Expression, Error> {
+        let start_span = self.expect_token(&If)?;
+
+        let condition = Box::new(self.parse_expression(&Precedence::Lowest)?);
+
+        let true_expression = Box::new(self.parse_expression(&Precedence::Lowest)?);
+
+        self.expect_token(&Else)?;
+
+        let false_expression = Box::new(self.parse_expression(&Precedence::Lowest)?);
+
+        Ok(Expression {
+            span: Span::from_range(start_span.start, false_expression.span.end),
+            kind: ExpressionKind::Conditional {
+                condition,
+                true_expression,
+                false_expression,
+            },
+        })
     }
 
     fn expect_token(&mut self, kind: &TokenKind) -> Result<Span, Error> {

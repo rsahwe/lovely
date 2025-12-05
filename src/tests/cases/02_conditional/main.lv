@@ -1,0 +1,7 @@
+main :: fun () -> Int: {
+   if !false {
+      0
+   } else {
+      1
+   }
+}

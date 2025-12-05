@@ -283,6 +283,45 @@ impl IRGenerator {
                 ));
                 Entity::temp_val(id, *return_type)
             }
+            CheckedExpressionData::Conditional {
+                condition,
+                true_expression,
+                false_expression,
+            } => {
+                let false_label = format!("label#{}", self.get_id());
+                let end_label = format!("label#{}", self.get_id());
+                let id = self.get_id();
+                let ty = Type::Bool; //TODO: doesn't matter at the moment, but probably will, TYPE LOOKUP PLS
+
+                let condition = self.expression_ir(condition);
+
+                self.add_instruction(Instruction::conditional(
+                    Entity::temp_val(id, ty),
+                    condition,
+                    false_label.clone(),
+                ));
+
+                let true_value = self.expression_ir(true_expression);
+
+                let ty = true_value.ty.clone();
+
+                self.add_instruction(Instruction::Move {
+                    dest: Entity::temp_val(id, true_value.ty.clone()),
+                    src: true_value,
+                });
+                self.add_instruction(Instruction::Goto(end_label.clone()));
+                self.add_instruction(Instruction::Label(false_label));
+
+                let false_value = self.expression_ir(false_expression);
+
+                self.add_instruction(Instruction::Move {
+                    dest: Entity::temp_val(id, false_value.ty.clone()),
+                    src: false_value,
+                });
+                self.add_instruction(Instruction::Label(end_label));
+
+                Entity::temp_val(id, ty)
+            }
         }
     }
 }
