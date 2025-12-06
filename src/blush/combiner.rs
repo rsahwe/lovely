@@ -267,6 +267,18 @@ impl<'a> Combiner<'a> {
                 },
                 expr.span,
             ),
+            ExpressionKind::Conditional {
+                condition,
+                true_expression,
+                false_expression,
+            } => Expression::new(
+                ExpressionKind::Conditional {
+                    condition: Box::new(Self::mangle_var_names(condition)),
+                    true_expression: Box::new(Self::mangle_var_names(true_expression)),
+                    false_expression: Box::new(Self::mangle_var_names(false_expression)),
+                },
+                expr.span,
+            ),
             ExpressionKind::BoolLiteral(_)
             | ExpressionKind::IntLiteral(_)
             | ExpressionKind::Use { .. } => expr.clone(),
@@ -309,6 +321,16 @@ impl<'a> Combiner<'a> {
                 arguments.iter().fold(new_base, |acc, arg| {
                     Self::referenced_variables(&arg.value, acc)
                 })
+            }
+            ExpressionKind::Conditional {
+                condition,
+                true_expression,
+                false_expression,
+            } => {
+                let mut new_base = Self::referenced_variables(condition, base);
+                new_base = Self::referenced_variables(true_expression, new_base);
+                new_base = Self::referenced_variables(false_expression, new_base);
+                new_base
             }
         }
     }

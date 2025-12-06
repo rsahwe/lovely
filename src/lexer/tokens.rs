@@ -18,6 +18,8 @@ pub enum TokenKind {
     Type,   // type
     True,   // true
     False,  // false
+    If,     // if
+    Else,   // else
 
     // syntax
     LParen,      // (
@@ -73,6 +75,8 @@ impl Display for TokenKind {
             Self::Type => "type",
             Self::True => "true",
             Self::False => "false",
+            Self::If => "if",
+            Self::Else => "else",
             Self::LParen => "(",
             Self::RParen => ")",
             Self::LBrace => "{",

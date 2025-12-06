@@ -488,6 +488,36 @@ impl Checker {
                 unreachable!("No error, no missing function and no success???")
             }
             ExpressionKind::Use { .. } => todo!("typechecking use expressions"),
+            ExpressionKind::Conditional {
+                condition,
+                true_expression,
+                false_expression,
+            } => {
+                let true_expression = Box::new(self.check_expression(true_expression, type_hint)?);
+                let false_expression =
+                    Box::new(self.check_expression(false_expression, type_hint)?);
+
+                if true_expression.type_id == false_expression.type_id {
+                    let res_type = true_expression.type_id;
+
+                    Self::typed_expression(
+                        CheckedExpressionData::Conditional {
+                            condition: Box::new(self.check_expression(condition, Some(BOOL_ID))?),
+                            true_expression,
+                            false_expression,
+                        },
+                        expr.span,
+                        res_type,
+                        type_hint,
+                    )
+                } else {
+                    Err(Error::type_mismatch(
+                        true_expression.type_id,
+                        false_expression.type_id,
+                        expr.span,
+                    ))
+                }
+            }
         }
     }
 
@@ -563,6 +593,12 @@ pub enum CheckedExpressionData {
         name: String,
         arguments: Vec<CheckedFunctionArgument>,
         variable_id: VariableId,
+    },
+
+    Conditional {
+        condition: Box<CheckedExpression>,
+        true_expression: Box<CheckedExpression>,
+        false_expression: Box<CheckedExpression>,
     },
 }
 

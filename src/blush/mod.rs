@@ -103,8 +103,11 @@ impl Blush {
         .combine()?;
 
         let mut checker = Checker::new();
-        let Ok(checked_program) = checker.check(&combined_program) else {
-            return Err("Failed to typecheck program".into());
+        let checked_program = match checker.check(&combined_program) {
+            Ok(r) => r,
+            Err(errors) => {
+                return Err(format!("Failed to typecheck program due to: {:#?}", errors).into());
+            }
         };
 
         let ir = IRGenerator::new(checker.types).program_ir(&checked_program);

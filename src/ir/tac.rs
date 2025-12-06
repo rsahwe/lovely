@@ -69,10 +69,8 @@ pub enum Instruction {
         src: Entity,
     },
     Conditional {
-        lhs: Entity,
-        rhs: Entity,
-        operator: Operator,
-        true_label: Label,
+        dest: Entity,
+        condition: Entity,
         false_label: Label,
     },
     Call {
@@ -83,6 +81,11 @@ pub enum Instruction {
     Goto(Label),
     Ret(Entity),
     Exit(Entity),
+    Label(Label),
+    Move {
+        dest: Entity,
+        src: Entity,
+    },
 }
 
 impl Instruction {
@@ -104,6 +107,13 @@ impl Instruction {
     pub const fn not(dest: Entity, src: Entity) -> Self {
         Self::Not { dest, src }
     }
+    pub const fn conditional(dest: Entity, condition: Entity, false_label: Label) -> Self {
+        Self::Conditional {
+            dest,
+            condition,
+            false_label,
+        }
+    }
     pub const fn call(dest: Entity, callee: Entity, args: Vec<Entity>) -> Self {
         Self::Call { dest, callee, args }
     }
@@ -119,14 +129,12 @@ impl Display for Instruction {
             Self::Not { dest, src } => write!(f, "{dest} := !{src}"),
             Self::Assign { dest, src } => write!(f, "{dest} := {src}"),
             Self::Conditional {
-                lhs,
-                rhs,
-                operator,
-                true_label,
+                dest,
+                condition,
                 false_label,
             } => write!(
                 f,
-                "if {lhs} {operator} {rhs} then goto {true_label} else goto {false_label}"
+                "create {dest} and if not {condition} then goto {false_label}"
             ),
             Self::Call { dest, callee, args } => write!(
                 f,
@@ -139,6 +147,8 @@ impl Display for Instruction {
             Self::Goto(label) => write!(f, "goto {label}"),
             Self::Ret(entity) => write!(f, "ret {entity}"),
             Self::Exit(code) => write!(f, "exit {code}"),
+            Self::Label(label) => write!(f, "label {label}"),
+            Self::Move { dest, src } => write!(f, "{dest} := {src}"),
         }
     }
 }
@@ -230,7 +240,7 @@ impl Display for Type {
 impl Type {
     pub const fn size_in_bytes(&self) -> usize {
         match &self {
-            Self::Bool => 1,
+            Self::Bool => 8, //TODO: stack needs to be 8 byte aligned and lovely is not optimized anyway, fix later
             Self::Unit => 0,
             Self::Int | Self::Function { .. } => 8,
         }

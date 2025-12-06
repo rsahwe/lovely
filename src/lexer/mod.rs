@@ -136,6 +136,8 @@ impl<'src> Lexer<'src> {
                     "type" => Token::new(Type, cur_index, 4),
                     "true" => Token::new(True, cur_index, 4),
                     "false" => Token::new(False, cur_index, 5),
+                    "if" => Token::new(If, cur_index, 2),
+                    "else" => Token::new(Else, cur_index, 4),
                     s => Token::new(Identifier, cur_index, s.len()),
                 }
             }

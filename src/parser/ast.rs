@@ -23,6 +23,11 @@ pub enum ExpressionKind {
         namespace: Option<String>,
     },
     Block(Vec<Expression>),
+    Conditional {
+        condition: Box<Expression>,
+        true_expression: Box<Expression>,
+        false_expression: Box<Expression>,
+    },
     Prefix {
         operator: PrefixOperator,
         expression: Box<Expression>,
@@ -65,6 +70,15 @@ impl ExpressionKind {
             Infix { left, right, .. } => left.kind.is_const() && right.kind.is_const(),
             VariableDecl { value, mutable, .. } => !mutable && value.kind.is_const(),
             FunctionCall { .. } => false,
+            Conditional {
+                condition,
+                true_expression,
+                false_expression,
+            } => {
+                condition.kind.is_const()
+                    && true_expression.kind.is_const()
+                    && false_expression.kind.is_const()
+            }
             BoolLiteral(_) | IntLiteral(_) | Ident { .. } | Function { .. } | Use { .. } => true,
         }
     }
